@@ -172,6 +172,9 @@ public int fastAccessTo123;
 #### [Dropdown]
 Makes dropdown with predefined values the only way of changing value of the field.
 
+![Unity_WNS3UhjtSH](https://user-images.githubusercontent.com/48364457/176678325-21e9c084-e3d1-4550-b49f-c5e6b47613e7.gif)
+
+
 #### [HDynamicDropdownButton]
 Additional button that allows for selection of dynamic values.
 ```csharp
@@ -185,8 +188,12 @@ private IEnumerable<string> GetGuids()
 }
 ```
 
+
+
 #### [DynamicDropdown]
 Makes dropdown with dynamic values the only way of changing value of the field.
+
+![Unity_wfXBGQNbyE](https://user-images.githubusercontent.com/48364457/176678481-e560ae30-4f7a-4fe7-80d8-1f0f10abd1f6.gif)
 
 #### SerializeReferenceHelper
 Allows to select type for serialize references. 
@@ -198,13 +205,18 @@ public Animal animal = null;
 public object unityNamespaceObject = null;
 ```
 
-#### [EHPreviev]
+![Unity_UuGxiG4BSZ](https://user-images.githubusercontent.com/48364457/176678887-2eb4977c-c60e-4c15-962b-7725be949ab0.gif)
+
+
+#### [EHPreview]
 Draws editor for a field
 ```csharp
 [EHoneyRun]  
 [EHPreview]  
 public Transform withPreview;
 ```
+![Unity_eGpg8yvVjt](https://user-images.githubusercontent.com/48364457/176681403-81020db7-a7ba-4571-85bc-e6755afb5109.gif)
+
 
 #### [ResetValue]
 Adds a button that allows for reseting the value. Value has to be a primitive.
@@ -213,15 +225,26 @@ Adds a button that allows for reseting the value. Value has to be a primitive.
 [HResetValue(42)]  
 public int resetable=42;
 ```
+![Unity_aX2TdycrJj](https://user-images.githubusercontent.com/48364457/176681788-ad16106b-52bb-4e92-930e-76f1227e679f.gif)
+
 
 #### [Tag]
 Draws dropdown to select unity tag
 
+![image](https://user-images.githubusercontent.com/48364457/176682004-fc0fcc89-e509-4cbc-b160-ab7ccaa83bc5.png)
+
 #### [Layer]
 Draws dropdown to select unity layer
 
+![image](https://user-images.githubusercontent.com/48364457/176682029-c72cc597-0ac2-4082-a964-b2318f5eef46.png)
+
+
 #### [SearchableEnum]
 Replaces enum dropdown with searchable window
+
+![Unity_9fbkVBVwhp](https://user-images.githubusercontent.com/48364457/176682157-d37cab92-f9aa-4ad7-8fbf-e1ed9f698486.gif)
+
+
 
 #### [Slider]
 Similar to unity **[Range]**, but allows for dynamic limits and alternative appearance.
@@ -233,6 +256,9 @@ public float hp  = 0;
 [Slider("0","maxMana",SliderMode.ProgressBar)]  
 public float mana = 0;
 ```
+
+![Unity_LJrdKvxGRK](https://user-images.githubusercontent.com/48364457/176682830-4877e953-8b42-4ec4-88b3-128ddc8bc471.gif)
+
 #### [EHConstSizeAttribute]
 Makes the array size constant and draws array expanded
 ```csharp
@@ -304,9 +330,9 @@ All groups require HoneyEditor. Groups can be nested (use "/")
 
 [EDefVerticalGroup("BasicFolders",BaseGroupAppearance.Empty,true)]  
 [EDefVerticalGroup("BasicFolders/a",BaseGroupAppearance.Empty,true)]  
+
 [EDefVerticalGroup("GroupBox",BaseGroupAppearance.BoxGroup,false)]  
-[EDefVerticalGroup("GroupBoxFolder",BaseGroupAppearance.BoxGroup,true)]  
-[EDefVerticalGroup("GroupBoxFolder/a",BaseGroupAppearance.BoxGroup,true)]  
+[EDefVerticalGroup("GroupBox/a",BaseGroupAppearance.BoxGroup,false)]  
   
 public class GroupDemo : MonoBehaviour  
 {  
@@ -316,13 +342,16 @@ public class GroupDemo : MonoBehaviour
  [EGroup("BasicFolders/a")] public string n;  
  [EGroup("BasicFolders/a")] public string s;  
  [Space]  
- [EGroup("GroupBoxFolder")] public string d;  
- [EGroup("GroupBoxFolder")] public string g;  
- [EGroup("GroupBoxFolder/a")] public string k;  
- [EGroup("GroupBoxFolder/a")] public string a;  
+ [EGroup("GroupBox")] public string d;  
+ [EGroup("GroupBox")] public string g;  
+ [EGroup("GroupBox/a")] public string k;  
+ [EGroup("GroupBox/a")] public string a;  
  }
   
   ```
+  
+  ![Unity_9UHrpnx0So](https://user-images.githubusercontent.com/48364457/176683699-df2530a2-aa93-455b-b133-f572aaffd997.gif)
+
 #### EDefTabGroup
 
 Defines groups that consists of 2 or more tabs.
@@ -339,6 +368,10 @@ public class TabDemo : MonoBehaviour
 }
 ```
 In order to assign tab to group  use [EAssignGroupToTab] on the class.
+
+![Unity_eQfXttJtuK](https://user-images.githubusercontent.com/48364457/176684024-f981f734-1dce-4057-8f64-89e732a76954.gif)
+
+
 
 #### EDefHorizontalGroup
 Allows to position elements in horizontal manner.
@@ -368,6 +401,9 @@ public class HorizontalDemo : MonoBehaviour
  [EGroup("a")][HShortPrefix][HoneyRun]public int i;  
  [EGroup("a")][HShortPrefix][HoneyRun] public int j;
  ```
+ ![image](https://user-images.githubusercontent.com/48364457/176684141-1d988574-1b11-4eec-828a-c2338e3adc8c.png)
+
+ 
  ## Non serializable attributes
  - They can be grouped just like fields.
 #### [EMethodButton]

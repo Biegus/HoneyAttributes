@@ -5,10 +5,10 @@ Unity plugin that adds some useful attributes. Most of them will work with any e
 
 ## Namespaces
 
-**BaseTool.Honey** - all you need if you just want to use attributes
+**Honey** - all you need if you just want to use attributes
 
 however for more sophisticated things, mostly custom drawers use
-**BaseTool.Honey.Core** and **BaseTool.Honey.Editor**
+**Honey.Core** and **Honey.Editor**
 
 ## Types of attributes
 Types of attributes are shown by their prefixes

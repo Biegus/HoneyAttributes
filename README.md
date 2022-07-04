@@ -3,6 +3,13 @@
 
 Unity plugin that adds some useful attributes. Most of them will work with any editor. For those few who use custom one, you need to explicitly make the class use HoneyEditor inheritor.
 
+## Namespaces
+
+**BaseTool.Honey** - all you need if you just want to use attributes
+
+however for more sophisticated things, mostly custom drawers use
+**BaseTool.Honey.Core** and **BaseTool.Honey.Editor**
+
 ## Types of attributes
 Types of attributes are shown by their prefixes
 
@@ -21,7 +28,7 @@ public class $ClassName$Editor : BaseTool.Honey.Editor.HoneyEditor
 #endif
 ```
 ## Meta and control attributes
-####	HShowIf
+####	[HShowIf]
 
 Restricts  whether a field can be shown/editable.
 Name can point to a static/instance method/field/property or to a simple **BoolExpression**
@@ -124,7 +131,7 @@ public string GetAlphabetElement(string name, object value)
 
 ![image](https://user-images.githubusercontent.com/48364457/176659601-2fdc5732-2cac-439d-aa84-777e64d5ff49.png)
 
-#### HelpBox
+#### [HelpBox]
 Draws simple helpbox
 ```csharp
 [HelpBox("Hello how are u?")]   
@@ -195,7 +202,7 @@ Makes dropdown with dynamic values the only way of changing value of the field.
 
 ![Unity_wfXBGQNbyE](https://user-images.githubusercontent.com/48364457/176678481-e560ae30-4f7a-4fe7-80d8-1f0f10abd1f6.gif)
 
-#### SerializeReferenceHelper
+#### [SerializeReferenceHelper]
 Allows to select type for serialize references. 
 Type can be restricted by namespace
 ```csharp
@@ -259,13 +266,7 @@ public float mana = 0;
 
 ![Unity_LJrdKvxGRK](https://user-images.githubusercontent.com/48364457/176682830-4877e953-8b42-4ec4-88b3-128ddc8bc471.gif)
 
-#### [EHConstSizeAttribute]
-Makes the array size constant and draws array expanded
-```csharp
-[EHoneyRun]
-[EHConstSizeAttribute(3)]  
-public string[] someElements= new string[3];
-```
+
 #### [HGetComponentButton]
 Allows for easier way to set component field
 ```csharp
@@ -278,9 +279,13 @@ public SpriteRenderer rendererGetOrAdd;
 ```
 Flags:
 IncludeChildren -> allows for grabbing from children
+
 AddAutomaticallyIfNotPresent -> If cannot grab, it adds the component
+
 Aggressive -> Button presses itself on its own
 
+
+![Unity_2Tw05FHngh](https://user-images.githubusercontent.com/48364457/177140200-f0bccb42-2cd9-4d3a-ae77-60eacc7a345e.gif)
 
 ## Restrains
 #### [HMin],[HMax]
@@ -288,14 +293,29 @@ Defines min and max value for number field. May be dynamic.
 
 (There is already unity attributes min, there's no max though)
 
-#### CurveBound
+
+#### [EHConstSizeAttribute]
+Makes the array size constant and draws array expanded
+
+```csharp
+[EHoneyRun]
+[EHConstSizeAttribute(3)]  
+public string[] someElements= new string[3];
+```
+
+![image](https://user-images.githubusercontent.com/48364457/177141551-3f6adbf4-edc2-4132-8a8c-058e70b64dcc.png)
+
+#### [CurveBound]
 
 Restricts curve range
 ```csharp
 [CurveBound(0, 1, 0, 1)] public AnimationCurve curve01;
 ```
-#### AssetsOnly
+![image](https://user-images.githubusercontent.com/48364457/177141655-8479d1c0-1f8d-4434-bdbb-6e9f2bcbd0df.png)
+
+#### [AssetsOnly]
 Disallows scene references.
+![image](https://user-images.githubusercontent.com/48364457/177141680-537c8a39-3da2-4515-ac5c-42a5ee4367bc.png)
 
 #### [HValidate]
 Soft restrain that marks field in red if requirements are not met.
@@ -311,11 +331,13 @@ private int Do(int v)
   return v / 5;  
 }
 ```
+![Unity_6CYPhG7VIx](https://user-images.githubusercontent.com/48364457/177141741-1c6ff961-b2cf-4e02-83c5-84035a0336c4.gif)
 
 ####  [HNotNull]
 Soft restrain that marks field in red if field is null
 
 
+![Unity_zSIMDUYajI](https://user-images.githubusercontent.com/48364457/177141844-2c516990-f32b-4a60-8862-9f96e450dfc0.gif)
 
 
 ## Groups
@@ -352,7 +374,7 @@ public class GroupDemo : MonoBehaviour
   
   ![Unity_9UHrpnx0So](https://user-images.githubusercontent.com/48364457/176683699-df2530a2-aa93-455b-b133-f572aaffd997.gif)
 
-#### EDefTabGroup
+#### [EDefTabGroup]
 
 Defines groups that consists of 2 or more tabs.
 In the example below group name is empty string(master group) which forces every element to be in that group.
@@ -373,7 +395,7 @@ In order to assign tab to group  use [EAssignGroupToTab] on the class.
 
 
 
-#### EDefHorizontalGroup
+#### [EDefHorizontalGroup]
 Allows to position elements in horizontal manner.
 Remember that you can always use [HShortPrefix] or [HHidePrefix]
 ```csharp
@@ -412,6 +434,9 @@ Draws button that runs parameterless method.
 [EMethodButton(ButtonSize:2)]  
 public void ClickMe()=>Debug.Log("thx");
 ```
+
+![image](https://user-images.githubusercontent.com/48364457/177142956-8bf2e206-c3bc-4077-a284-6975fc60ffcd.png)
+
 #### [EShowAsString]
 Shows any property, non serialized field, or parameterless method as a string from .ToString()
 ```csharp
@@ -420,3 +445,6 @@ private int secret = 2152;
 [EShowAsString]  
 public float TheTime => Time.time;
 ```
+
+![image](https://user-images.githubusercontent.com/48364457/177142692-2115a5f0-9f5b-48f9-8ac2-d5bb7aee3b4b.png)
+

@@ -5,7 +5,7 @@ Unity plugin that adds some useful attributes. Most of them will work with any e
 
 Download unitypackage: https://github.com/Biegus/HoneyAttributes/releases/tag/release
 
-Requires unity version that supports c# 8.0
+Requires unity version that supports full c# 8.0
 
 ## Namespaces
 

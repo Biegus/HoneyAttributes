@@ -3,6 +3,8 @@
 
 Unity plugin that adds some useful attributes. Most of them will work with any editor. For those few who use custom one, you need to explicitly make the class use HoneyEditor inheritor.
 
+Download unitypackage: https://github.com/Biegus/HoneyAttributes/releases/tag/release
+
 ## Namespaces
 
 **Honey** - all you need if you just want to use attributes

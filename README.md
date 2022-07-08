@@ -5,7 +5,7 @@ Unity plugin that adds some useful attributes. Most of them will work with any e
 
 Download unitypackage: https://github.com/Biegus/HoneyAttributes/releases/tag/release
 
-Requires unity version that supports full c# 8.0
+Requires unity version that supports full C# 8.0
 
 ## Namespaces
 
@@ -18,7 +18,7 @@ however for more sophisticated things, mostly custom drawers use
 Types of attributes are shown by their prefixes
 
  - Name -> doesn't require anything
- - **H**Name -> requires **HoneRun** or **EHoneyRun** attribute to be added as well
+ - **H**Name -> requires **HoneyRun** or **EHoneyRun** attribute to be added as well
  - **E**Name -> requires the editor to be the **HoneyEditor**
  - **EH**Name -> requires **EHoneyRun** attribute and the editor to be the **HoneyEditor**
 
@@ -66,7 +66,7 @@ Blocks editing the variable
 ![image](https://user-images.githubusercontent.com/48364457/176658854-b1bf62a4-cdc7-4010-9d3a-4df8a721ff26.png)
 
 
-#### [HHeaders]
+#### [HHeader]
 Headers with greater capabilities than unity headers.
 ```csharp
 [DefineStyleOverride("big_right_header",Alignment = TextAnchor.MiddleRight,  
@@ -229,7 +229,7 @@ public Transform withPreview;
 ![Unity_eGpg8yvVjt](https://user-images.githubusercontent.com/48364457/176681403-81020db7-a7ba-4571-85bc-e6755afb5109.gif)
 
 
-#### [ResetValue]
+#### [HResetValue]
 Adds a button that allows for reseting the value. Value has to be a primitive.
 ```csharp
 [HoneyRun]  
@@ -258,7 +258,7 @@ Replaces enum dropdown with searchable window
 
 
 #### [Slider]
-Similar to unity **[Range]**, but allows for dynamic limits and alternative appearance.
+Similar to Unity's **[Range]**, but allows for dynamic limits and alternative appearance.
 ```csharp
 public float maxHp;
 public float maxMana;
@@ -282,11 +282,11 @@ public SpriteRenderer renderer;
 public SpriteRenderer rendererGetOrAdd;
 ```
 Flags:
-IncludeChildren -> allows for grabbing from children
+ - IncludeChildren -> allows for grabbing from children
 
-AddAutomaticallyIfNotPresent -> If cannot grab, it adds the component
+ - AddAutomaticallyIfNotPresent -> If cannot grab, it adds the component
 
-Aggressive -> Button presses itself on its own
+ - Aggressive -> Button presses itself on its own
 
 
 ![Unity_2Tw05FHngh](https://user-images.githubusercontent.com/48364457/177140200-f0bccb42-2cd9-4d3a-ae77-60eacc7a345e.gif)

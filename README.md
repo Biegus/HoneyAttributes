@@ -28,9 +28,12 @@ To enable context in which attributes with "E" prefix work add:
 #if UNITY_EDITOR
 [UnityEditor.CustomEditor(typeof($ClassName$))]
 [UnityEditor.CanEditMultipleObjects]
-public class $ClassName$Editor : BaseTool.Honey.Editor.HoneyEditor
+public class $ClassName$Editor : Honey.Editor.HoneyEditor
 #endif
 ```
+If you just want the custom editor to work for every script, use ``[UnityEditor.CustomEditor(typeof(object),true]`` (not recommended)
+
+
 ## Meta and control attributes
 ####	[HShowIf]
 

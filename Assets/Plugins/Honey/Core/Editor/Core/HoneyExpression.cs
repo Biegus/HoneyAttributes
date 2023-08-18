@@ -38,6 +38,11 @@ namespace Honey.Editor
                 return (o) => func(o).ToString();
             else return func;
         }
+
+        private static ArgumentException GetElementNotFoundException()
+        {
+             return new ArgumentException($"Honey expression is incorrect: element not found");
+        }
         private static Func<object,object> InternalParseExpression(string  text, Type type, HoneyValueParseFlags flags)
         {
             Func<object, object> HandleSimpleSingle(string single, HoneyValueParseFlags innerFlags)
@@ -57,15 +62,21 @@ namespace Honey.Editor
                 }
                 if (innerFlags.HasFlag( HoneyValueParseFlags.IntegerMode))
                 {
-                    long parsed = long.Parse(single, CultureInfo.InvariantCulture);
-                    return (_) => parsed;
+                    if (long.TryParse(single, NumberStyles.Integer, CultureInfo.InvariantCulture,out long parsed ))
+                    {
+                        return _ => parsed;
+                    }
+                    throw GetElementNotFoundException();
                 }
                 else
                 {
-                    
-                    float parsed = float.Parse(single, CultureInfo.InvariantCulture);
-                    return (_) => parsed;
+                    if (float.TryParse(single, NumberStyles.Integer, CultureInfo.InvariantCulture,out float parsed ))
+                    {
+                        return _ => parsed;
+                    }
+                    throw GetElementNotFoundException();
                 }
+
             }
 
             Func<object, object> HandleAdvSingle(string single)
@@ -73,12 +84,17 @@ namespace Honey.Editor
                 if (text[0] == '!')
                     return Negate(HandleAdvSingle(single[1..]));
                 string methodName = methodNameRegex.Match(single).Value;
-                if (single.Contains("("))
+                if (single.Contains("(") && !single.Contains("()"))
                 {
-                    MethodInfo methodInfo = type.GetMethod(methodName,
-                        BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                     var args = argumentsRegex.Matches(single);
-                    Func<object, object> a=null, b=null;
+                    MethodInfo methodInfo = type.GetMethods(
+                        BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                        .FirstOrDefault(item=>args.Count==item.GetParameters().Length && item.Name==methodName);
+                    if (methodInfo==null)
+                    {
+                        throw GetElementNotFoundException();
+                    }
+                    Func<object, object> a=null,b=null;
                     if (args.Count < 1)
                     {
                         return null;
@@ -114,7 +130,7 @@ namespace Honey.Editor
                 }
                 else
                 {
-                    return HandleSimpleSingle(single,flags);
+                    return HandleSimpleSingle(single.Replace("()",""),flags);
                 }
             }
 

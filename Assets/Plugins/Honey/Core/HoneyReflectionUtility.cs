@@ -22,7 +22,7 @@ namespace Honey.Core
             PropertyInfo? propertyInfo = type.GetProperty(name, Flags);
             if (propertyInfo != null)
                 return (Func<object, T>) CastFunc<object,T>(propertyInfo.GetMethod);
-            MethodInfo? method = type.GetMethod(name, Flags);
+            MethodInfo? method = type.GetMethods( Flags).FirstOrDefault(item=>item.GetParameters().Length==0 && item.Name==name);
             if (method != null)
             {
              

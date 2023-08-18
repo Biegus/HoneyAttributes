@@ -16,6 +16,7 @@ namespace Honey.Editor
         private static HoneyValueExpressionGetterCache<bool> cache = new HoneyValueExpressionGetterCache<bool>();
         public HoneyPropertyState GetDesiredState(in HoneyDrawerInput inp, HoneyAttribute attribute)
         {
+
             HShowIfAttribute atr = attribute.As<HShowIfAttribute>();
             if (!Check(inp, atr))
                 return atr.State;
@@ -24,7 +25,15 @@ namespace Honey.Editor
 
         public bool Check(in HoneyDrawerInput inp, HShowIfAttribute attribute)
         {
-            return cache.Get(attribute.Name, inp.Field,inp.SerializedProperty)(inp.Container);
+            try
+            {
+                return cache.Get(attribute.Name, inp.Field, inp.SerializedProperty)(inp.Container);
+            }
+            catch (Exception exception)
+            {
+                inp.Listener.LogLocalWarning(exception.Message,inp.Field,attribute);
+                return true;
+            }
         }
 
 

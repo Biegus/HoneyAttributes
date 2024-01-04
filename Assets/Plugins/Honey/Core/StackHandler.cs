@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Honey.Core;
 using UnityEngine;
 
-namespace Honey.Validation
+namespace Honey.Core
 {
     public class StackHandler<T>
     {

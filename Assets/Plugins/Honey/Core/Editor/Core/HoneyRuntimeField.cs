@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Honey;
+using Honey.Helper;
 using UnityEditor;
 using UnityEngine;
 
@@ -16,7 +17,7 @@ namespace Honey.Editor
         public IReadOnlyList<HoneyRuntimeFieldAttributeData> Elements => elements;
         internal HoneyRuntimeField(HoneyRuntimeFieldAttributeData[] elements)
         {
-            this.elements = elements;
+            this.elements = elements.OrderBy(item => item.Attribute.Order).ToArray();
             var first = this.elements.FirstOrDefault(item => item.Definition.FirstDrawer != null);
             if (first == null)
             {
@@ -48,27 +49,34 @@ namespace Honey.Editor
 
      
         public float QueryHeight(SerializedProperty property, FieldInfo field,GUIContent title,
-            IHoneyErrorListener listener,bool layoutContext,float width, IHoneyTempMemory memory)
+            IHoneyErrorListener listener,bool layoutContext, Stack<object> memory)
         {
             (object obj, object container) = GetTupleIfAsked(property);
    
             if (elements.Length == 0)
             {
-                //return default
-
-                return EditorGUI.GetPropertyHeight(property);
+                return EditorGUI.GetPropertyHeight(property,title);
+                //this is fine and not gonna be recursive
+                //if you call it from the context of drawing property it will ignore it (wierd!)
             }
-            HoneyDrawerInput input;
-            input.Field = field;
-            input.Obj = obj;
-            input.Container = container;
-            input.SerializedProperty = property;
-            input.TempMemory = memory;
-            input.Listener = listener;
-            input.AllowLayout = layoutContext;  
+
+
+            var sortedElements = elements.OrderBy(item => item.Attribute.Order).ToArray();
+            HoneyDrawerInput input = new HoneyDrawerInput()
+            {
+
+                Field = field,
+                Obj = obj,
+                Container = container,
+                SerializedProperty = property,
+                TempMemory = memory,
+                Listener = listener,
+                Flag = HoneyDrawerInput.Flags.AllowLayout.If(layoutContext) ,
+            };
             float sum = 0;
             var state = GetState(input);
-            foreach (var element in elements)
+
+            foreach (var element in elements.OrderBy(item=>item.Attribute.Order))
             {
                 sum += element.Definition.Additional?.GetHeight(input, AdditionalDrawerCallType.PreBefore,element.Attribute)??0;
                 if (state == HoneyPropertyState.Hidden) 
@@ -96,31 +104,33 @@ namespace Honey.Editor
                 ( obj,  container) = HoneyHandler.HoneyReflectionCache.ReadObject(property);
             return (obj, container);
         }
-        public void OnGui(SerializedProperty property, FieldInfo field, Rect position, IHoneyTempMemory tempMemory,
-            GUIContent title, IHoneyErrorListener listener, bool layoutContext)
+        public void OnGui(SerializedProperty property, FieldInfo field, Rect position, Stack<object> tempMemory,
+            GUIContent title, IHoneyErrorListener listener, bool layoutContext,bool changed)
         {
 
             (object obj, object container) = GetTupleIfAsked(property);
             if (elements.Length == 0)
             {
                 //draw normal gui
-                EditorGUI.PropertyField(position, property);
+                EditorGUI.PropertyField(position, property,true);
                 return;
             }
             Color color = GUI.color;
-            HoneyDrawerInput drawerInput;
-            drawerInput.Field = field;
-            drawerInput.Container = container;
-            drawerInput.Obj = obj;
-            drawerInput.SerializedProperty = property;
-            drawerInput.TempMemory = tempMemory;
-            drawerInput.Listener = listener;
-            drawerInput.AllowLayout = layoutContext;
+            HoneyDrawerInput drawerInput = new HoneyDrawerInput()
+            {
+                Field = field,
+                Container = container,
+                Obj = obj,
+                SerializedProperty = property,
+                TempMemory = tempMemory,
+                Listener = listener,
+                Flag = HoneyDrawerInput.Flags.AllowLayout.If(layoutContext) | HoneyDrawerInput.Flags.Changed.If(changed),
+            };
 
             bool anyCustomTitle = false;
             foreach (HoneyRuntimeFieldAttributeData element in elements)
             {
-                var custom = element.Definition.Additional?.GetCustomContent(drawerInput, element.Attribute, title);
+                GUIContent custom = element.Definition.Additional?.GetCustomContent(drawerInput, element.Attribute, title);
                 if (custom != null)
                 {
                     anyCustomTitle = true;
@@ -162,10 +172,9 @@ namespace Honey.Editor
 
             if (sortedByMain.Length==0)
             {
-               
-               
+
                 position.height = EditorGUI.GetPropertyHeight(drawerInput.SerializedProperty,title);
-               HoneyEG.PropertyField(position, drawerInput.SerializedProperty,title);
+                HoneyEG.PropertyField(position, drawerInput.SerializedProperty,title);
                 position.y += position.height;
             }
                

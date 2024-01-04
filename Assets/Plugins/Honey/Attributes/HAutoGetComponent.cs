@@ -1,18 +1,18 @@
-﻿#nullable enable
-using System;
+﻿using System;
 using Honey;
 using Honey.Helper;
 using UnityEngine;
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using System.Reflection;
+using Honey.Core;
 using UnityEditor;
 
 namespace Honey.Editor
 {
     public class HGetComponentButtonDrawer : IHoneyMainDrawer
     {
-        private Dictionary<(FieldInfo field, object container), float> tickers = new();
+        private readonly WeakAttributeCache<float> tickers = new();
         private const float REFRESH_TIME = 3f;
 
         public bool RequestHierarchyQuery => false;
@@ -45,7 +45,7 @@ namespace Honey.Editor
             {
                 if (!typeof(Component).IsAssignableFrom(input.Field.FieldType))
                 {
-                    input.Listener.LogGlobalWarning($"Field type is {input.Field.FieldType}, this is not component", input.Field, attribute);
+                    input.Listener.LogLocalWarning($"Field type is {input.Field.FieldType}, this is not component", input.Field, attribute);
                     return;
                 }
                 if (atr.Conf.HasFlag(ComponentBFlags.AddAutomaticallyIfNotPresent))
@@ -64,15 +64,14 @@ namespace Honey.Editor
                 Do(inp);
             }
 
-            if (inp.Obj == null)
+            if (inp.Obj == null&& atr.Conf.HasFlag(ComponentBFlags.Aggressive))
             {
-                if(atr.Conf.HasFlag(ComponentBFlags.Aggressive))
-                    if (EditorApplication.timeSinceStartup - tickers.GetValueOrDefault((inp.Field, inp.Container)) >
-                        REFRESH_TIME)
-                    {
-                        tickers[(inp.Field, inp.Container)] = (float)EditorApplication.timeSinceStartup;
-                        Do(inp);
-                    }
+                if (EditorApplication.timeSinceStartup - tickers.GetOrElseInsert(inp.SerializedProperty,atr,()=>0) >
+                    REFRESH_TIME)
+                {
+                    tickers.Set(inp.SerializedProperty,atr , (float) EditorApplication.timeSinceStartup);
+                    Do(inp);
+                }
             }
                
         }

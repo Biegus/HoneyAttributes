@@ -5,6 +5,7 @@ using System.Reflection;
 using Honey.Objects;
 #if UNITY_EDITOR
 using Honey.Editor;
+using Honey.Validation;
 using UnityEditor;
 
 #endif
@@ -28,10 +29,7 @@ namespace Honey.Editor
             bool bf = GUI.enabled;
 
             var isActive =(!(input.serializedObject.targetObject is  MonoBehaviour)) || (((MonoBehaviour)input.serializedObject.targetObject)).isActiveAndEnabled;
-            if ((flags.HasFlag(InspectorButtonLimits.NotInEditorMode) && !Application.isPlaying)
-                || (flags.HasFlag(InspectorButtonLimits.NotInPlayMode)&& Application.isPlaying)
-                || (flags.HasFlag(InspectorButtonLimits.NotIfObjectIsEnabled)&& isActive)
-                || (flags.HasFlag(InspectorButtonLimits.NotIfObjectIsNotEnabled) && !isActive))
+            if (flags.CheckIfFails(Application.isPlaying,isActive))
             {
                 GUI.enabled = false;
             }

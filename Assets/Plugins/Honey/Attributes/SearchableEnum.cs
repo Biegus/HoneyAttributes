@@ -6,6 +6,7 @@ using System;
 
 using UnityEngine;
 #if UNITY_EDITOR
+using Honey.Core;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 
@@ -23,19 +24,24 @@ namespace Honey.Editor
             SearchableEnumAttribute atr = (attribute as SearchableEnumAttribute)!;
             dropdownStyle ??= new GUIStyle("dropdown");
             provider ??= ScriptableObject.CreateInstance<EnumSearchProvider>();
+
             UnityEngine.Object baseTarget = property.serializedObject.targetObject;
             var query = HoneyHandler.HoneyReflectionCache.GetHierarchyQuery(property.propertyPath,
                 property.serializedObject.targetObject.GetType());
             object target =query
                 .RetrieveTwoLast(property.serializedObject.targetObject).container;
-            string path = property.propertyPath;
+
+
             Rect bt = position;
             position.width =EditorGUIUtility.labelWidth;
             bt.x += position.width;
             bt.width = bt.width - position.width;
+
             EditorGUI.LabelField( position,label);
+
             string enumName = property.enumNames[property.enumValueIndex];
             string content = atr.DontShowNumberValue ? enumName : $"{enumName} ({property.intValue})";
+            string path = property.propertyPath;
 
                
             if (EditorGUI.DropdownButton(bt, new GUIContent( content),FocusType.Passive,dropdownStyle))
@@ -46,14 +52,14 @@ namespace Honey.Editor
                         BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
                     if (method == null)
                     {
-                        HoneyErrorListenerStack.GetListener().LogGlobalWarning($"Limit function {atr.LimitFunction} was not found",fieldInfo,atr);
+                        HoneyErrorListenerStack.GetListener().LogLocalWarning($"Limit function {atr.LimitFunction} was not found",fieldInfo,atr);
                         return;
                     }
                     provider.Validate = (e) => (bool) method.Invoke(target, new object[] {e});
                 }
                 else provider.Validate = (_) => true;
                    
-                provider.EnumType = fieldInfo.FieldType;
+                provider.EnumType = HoneyReflectionUtility.FlattenCollectionType( fieldInfo.FieldType);
                 provider.OnClick = en =>
                 {
                     SerializedObject serialized = new SerializedObject(baseTarget);
@@ -80,9 +86,12 @@ namespace Honey.Editor
 
             if (EnumType == null || OnClick == null || Validate == null)
                 throw new InvalidOperationException("Properties were not set");
+
+
             List<SearchTreeEntry> list = new();
             var master=new SearchTreeGroupEntry(new GUIContent(EnumType.Name));
             list.Add(master);
+
             int i = -1;
             foreach (var enumName in Enum.GetNames(EnumType))
             {
@@ -112,6 +121,10 @@ namespace Honey.Editor
 
 namespace Honey
 {
+    /// <summary>
+    /// Instead of enum dropdown, allows for selecting it from menu similiar to add component menu. 
+    /// It is intented for enums with a lot of variances, which are annoying to choose from dropdown.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
     public class SearchableEnumAttribute : PropertyAttribute
     {

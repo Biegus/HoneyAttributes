@@ -12,14 +12,14 @@ namespace Honey.Editor
         public bool RequestHierarchyQuery => false;
         public void Before(in HoneyDrawerInput inp, Rect rect, HoneyAttribute attribute)
         {
-            inp.TempMemory.Add((this,inp.Field),EditorGUIUtility.labelWidth);
+            inp.TempMemory.Push(EditorGUIUtility.labelWidth);
 
             EditorGUIUtility.labelWidth = 1;
         }
 
         public void After(in HoneyDrawerInput inp, Rect rect, HoneyAttribute attribute)
         {
-            EditorGUIUtility.labelWidth = inp.TempMemory.TakeAndRemove<float>((this, inp.Field));
+            EditorGUIUtility.labelWidth = (float)inp.TempMemory.Pop();
         }
     }
 }
@@ -34,5 +34,4 @@ namespace Honey
     }
 #if UNITY_EDITOR
 #endif
-
 }

@@ -3,7 +3,7 @@
 namespace Honey.Core
 {
     
-    public struct HoneySerializedPropertyId
+    public  struct HoneySerializedPropertyId
     {
         public object TargetRef;
         public FieldInfo Field;

@@ -11,11 +11,10 @@ namespace Honey.Helper
 {
     public static class GeneralExtension
     {
-       
         public static T As<T>(this object obj)
             where T:class
         {
-            return obj as T ?? throw new InvalidCastException();
+            return (T) obj;
         }
     }
 }

@@ -16,8 +16,7 @@ namespace Honey.Editor
     {
         private HoneyValueExpressionGetterCache<IEnumerable> cache = new HoneyValueExpressionGetterCache<IEnumerable>();
 
-        private Dictionary<HoneySerializedPropertyId, (GUIContent content, object? value)> namesCache =
-            new Dictionary<HoneySerializedPropertyId, (GUIContent content, object? value)>();
+        private static WeakAttributeCache<(GUIContent content, object? value)> namesCache = new();
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
@@ -28,16 +27,21 @@ namespace Honey.Editor
                 
             EditorGUI.LabelField(labelRect,label);
                 
-                
             bool splited = false;
             GUIContent[]? names=null;
-            IEnumerable values = cache.Get(atr.Reference, fieldInfo,property)(container);
+            var maybeValues = cache.GetAndInvoke(container, atr.Reference, fieldInfo, property);
+            if (maybeValues.TryError(out var error))
+            {
+                HoneyErrorListenerStack.GetListener().LogLocalWarning(error,null,atr);
+                return;
+            }
+
+            IEnumerable values = maybeValues.Unwrap();
             GUIContent content;
+
             if (values is IEnumerable<HoneyNamedEl>)
             {
-                var key = new HoneySerializedPropertyId(fieldInfo,
-                    property.serializedObject.targetObject, null);
-                if (namesCache.TryGetValue(key, out var res)&& Equals(res,obj) )
+                if (namesCache.TryGetValue(property,atr, out var res)&& Equals(res,obj) )
                 {
                     content = res.content;
                 }
@@ -54,7 +58,7 @@ namespace Honey.Editor
                     else
                         content = new GUIContent($"{names[tuple.Value.Item2]}");
 
-                    namesCache[key] = (content, obj);
+                    namesCache.Set(property,atr, (content, obj));
                 }
             }
             else

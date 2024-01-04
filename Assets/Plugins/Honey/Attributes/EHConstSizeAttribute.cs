@@ -20,20 +20,18 @@ namespace Honey.Editor
         public void Draw(in HoneyDrawerInput inp, Rect rect, HoneyAttribute attribute, GUIContent title, Action<GUIContent, Rect> body)
         {
 
-             
             EHConstSizeAttributeAttribute atr = (attribute as EHConstSizeAttributeAttribute)!;
             if (!inp.AllowLayout)
             {
-                inp.Listener.LogLocalWarning("will only work with ehoneyrun",inp.Field,attribute);
+                inp.Listener.LogLocalWarning("will only work with [EHoneyRun]",inp.Field,attribute);
                 return;
             }
 
             inp.SerializedProperty.arraySize = atr.Size;
-            var prop = inp.SerializedProperty;
+            SerializedProperty prop = inp.SerializedProperty;
 
-              
             var key = (inp.Field, SerializedPropertyHelper.GetIndexOfSerializedPropertyPath(prop.propertyPath),prop.serializedObject.targetObject);
-            var l = dict.GetOrInsertFunc(key
+            ReorderableList? l = dict.GetOrElseInsert(key
                 , () =>
                 {
                     var list = new ReorderableList(prop.serializedObject, prop)
@@ -70,11 +68,7 @@ namespace Honey.Editor
                     throw;
                 dict.Remove(key);
             }
-                
 
-              
-             
-              
         }
 
         public float GetDesiredAdditionalHeight(in HoneyDrawerInput inp, HoneyAttribute attribute, GUIContent title)
@@ -95,7 +89,7 @@ namespace Honey.Editor
 
 namespace Honey
 {
-   
+    [AttributeUsage(AttributeTargets.Field)]
     public class EHConstSizeAttributeAttribute : HoneyAttribute
     {
         public int Size { get; }

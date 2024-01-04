@@ -14,7 +14,7 @@ namespace Honey.Editor
 
         public float GetHeight(in HoneyDrawerInput inp, AdditionalDrawerCallType type, HoneyAttribute attribute)
         {
-            if (type == AdditionalDrawerCallType.Before)
+            if (type == AdditionalDrawerCallType.PreBefore)
             {
                 var atr = (attribute as HSpaceAttribute)!;
                 return EditorGUIUtility.singleLineHeight * atr.Amount;
@@ -24,10 +24,10 @@ namespace Honey.Editor
 
         }
 
-        public void Before(in HoneyDrawerInput inp, Rect rect, HoneyAttribute attribute)
+        public void PreBefore(in HoneyDrawerInput inp, Rect rect, HoneyAttribute attribute)
         {
-            EditorGUI.LabelField(rect,string.Empty);
         }
+
     }
 }
 #endif

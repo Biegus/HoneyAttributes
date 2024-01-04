@@ -17,6 +17,18 @@ namespace Honey.Editor
 {
    public static class HoneyEG
    {
+      private static GUIContent Temp=new();
+
+      /// <summary>
+      /// Should only by used when giving direcly to flat unity function that won't call it again.
+      /// </summary>
+      /// <param name="text"></param>
+      /// <returns></returns>
+      public static GUIContent TempContent(string text)
+      {
+         Temp.text = text;
+         return Temp;
+      }
       public static void PropertyField(Rect rect, SerializedProperty serializedProperty, GUIContent? content = null)
       {
          int bf = EditorGUI.indentLevel;
@@ -32,16 +44,16 @@ namespace Honey.Editor
       }
       public static void PropertyFieldLayout(SerializedProperty serializedProperty, GUIContent? content )
       {
-         HoneyEG.PropertyField(EditorGUILayout.GetControlRect(true,EditorGUI.GetPropertyHeight(serializedProperty)), serializedProperty);
+         HoneyEG.PropertyField(EditorGUILayout.GetControlRect(true,EditorGUI.GetPropertyHeight(serializedProperty)), serializedProperty,content);
       }
 
       public static void DrawSerializeReference(Rect rect, SerializedProperty serializedProperty, GUIContent? content = null)
       {
-         EditorGUI.PropertyField(rect, serializedProperty, true);
+         EditorGUI.PropertyField(rect, serializedProperty,content, true);
        
       }
 
-      public static bool SideButton(ref Rect rect, string text, float width = 25)
+      public static bool SideButton(ref Rect rect, string text)
       {
          Rect buttonRect = rect;
 
@@ -67,10 +79,7 @@ namespace Honey.Editor
                normal = {textColor = Color.white},
                richText = true
             };
-         
-            
-              
-           
+
             Texture2D texture = new Texture2D(10,10);
             for(int y=0;y<10;y++)
             for (int x = 0; x < 10; x++)
@@ -98,7 +107,6 @@ namespace Honey.Editor
                };
             }
             else ProgressBarBarBackgroundStyle = new GUIStyle((GUIStyle)internalPropertyBack.GetValue(null));
-
 
          }
       }

@@ -16,18 +16,30 @@ namespace Honey.Editor
         public void PreBefore(in HoneyDrawerInput inp, Rect rect, HoneyAttribute attribute)
         {
             var atr = (attribute as HJustProgressBarAttribute)!;
-            float value = cache.Get(atr.FloatExpression, inp.Field,inp.SerializedProperty)(inp.Container);
-            float start = cache.Get(atr.Start, inp.Field,inp.SerializedProperty)(inp.Container);
-            float end = cache.Get(atr.End, inp.Field,inp.SerializedProperty)(inp.Container);
-            float percentValue = (value - start) / (end - start);
-          
+            var maybeValue = cache.GetAndInvoke(inp.Container, atr.FloatExpression, inp.Field, inp.SerializedProperty);
+            var maybeStart = cache.GetAndInvoke(inp.Container, atr.Start, inp.Field, inp.SerializedProperty);
+            var maybeEnd = cache.GetAndInvoke(inp.Container, atr.End, inp.Field,inp.SerializedProperty);
+
+            var error = Hr.EitherError(maybeValue, maybeStart, maybeEnd);
+            if (error != null)
+            {
+                inp.Listener.LogLocalWarning(error,inp.Field,attribute);
+                return;
+            }
+
+            float value = maybeValue.Unwrap();
+            float start = maybeStart.Unwrap();
+            float end = maybeEnd.Unwrap();
+
+            float percentValue = Mathf.Clamp01( (value - start) / (end - start));
+
             Color barColor;
             Color labelColor;
             (barColor, labelColor) = HoneyEG.GetColorsFromProgressStyle(atr.Style);
 
-               
+
             string name = atr.Name ?? atr.FloatExpression;
-                
+
             if(!atr.UseUnity)
                 HoneyEG.ProgressBar(rect,percentValue,$"<b>{name} </b> ({value:0.00}/{end})",barColor,labelColor );
             else

@@ -14,12 +14,20 @@ namespace Honey.Editor
     public class HHelpBoxDrawer : IHoneyAdditionalDrawer
     {
         public bool RequestHierarchyQuery => true;
-        private Dictionary<FieldInfo , Func<object,string>> dict = new();
+        private readonly WeakAttributeCache<Func<object, string>> funcDict=new();
+        private readonly Dictionary<HHelpBoxAttribute, GUIStyle> styleDict=new();
         public float GetHeight(in HoneyDrawerInput inp, AdditionalDrawerCallType type, HoneyAttribute attribute)
         {
-            if (type == AdditionalDrawerCallType.PreBefore)
-                return EditorGUIUtility.singleLineHeight * 2;
-            else return 0;
+            HHelpBoxAttribute atr = attribute.As<HHelpBoxAttribute>();
+
+            if (type != AdditionalDrawerCallType.PreBefore) return 0;
+            if (!funcDict.TryGetValue(inp.SerializedProperty, attribute, out var result))
+                return 0;
+
+            //if atr.Style!=null and functDict has value at this key, styleDict should too if logic works correctly
+            GUIStyle style = atr.Style == null ? EditorStyles.helpBox : styleDict[atr];
+
+            return style.CalcHeight(HoneyEG.TempContent(result(inp.Container)), 1f);
         }
 
             
@@ -27,11 +35,26 @@ namespace Honey.Editor
         {
             var atr = (attribute as HHelpBoxAttribute)!;
             Type type = inp.Container.GetType();
-
-
             string name = inp.Field.Name;
+
             Func<Func<object,string>> toInsert = ()=> HoneyTextParser.Parse(atr.TextExpression, type,name);
-            EditorGUI.HelpBox(rect, dict.GetOrInsertFunc(inp.Field ,toInsert).Invoke(inp.Container),MessageType.Info);
+            string text = funcDict.GetOrElseInsert(inp.SerializedProperty, atr, toInsert).Invoke(inp.Container)?? string.Empty;
+
+            if (atr.Style == null)
+                EditorGUI.HelpBox(rect,text ,MessageType.Info);
+            else
+            {
+                GUIStyle style = styleDict.GetOrElseInsert(atr,
+                    () =>
+                    {
+                        GUIStyle style = EditorStyles.helpBox;
+                        HoneyValueParser.ParseStyleExpression(atr.Style,type,ref style);
+                        return style;
+                    });
+
+                GUI.Label(rect,text,style);
+            }
+
         }
     }
 }
@@ -43,6 +66,7 @@ namespace Honey
     public class HHelpBoxAttribute : HoneyAttribute
     {
         public string TextExpression { get; }
+        public string? Style { get; set; }
 
         public HHelpBoxAttribute(string textExpression)
         {

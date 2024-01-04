@@ -1,4 +1,4 @@
-﻿namespace Honey
+﻿namespace Honey.Helper
 {
     public class HoneyMathHelper
     {

@@ -10,7 +10,7 @@ namespace Honey.Editor
         public bool RequestHierarchyQuery => false;
         public GUIContent? GetCustomContent(in HoneyDrawerInput inp, HoneyAttribute attribute, GUIContent content)
         {
-            HCustomLabelAttribute atr = (attribute as HCustomLabelAttribute)!;
+            HCustomLabelAttribute atr = (HCustomLabelAttribute) attribute;
             return string.IsNullOrEmpty(atr.Label) ? GUIContent.none : new GUIContent(atr.Label);
         }
            

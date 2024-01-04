@@ -31,8 +31,7 @@ namespace  Honey.Editor
 
         public SerializedProperty GetIterator()
         {
-            var it= Property.Copy();
-            return it;
+            return Property.Copy();
         }
 
         public void Update()
@@ -43,6 +42,11 @@ namespace  Honey.Editor
         public void ApplyModifiedProperties()
         {
             //
+        }
+
+        public SerializedObject GetUpperSerializedObject()
+        {
+            return this.Property.serializedObject;
         }
 
         public object GetLowestTarget()

@@ -39,7 +39,6 @@ namespace  Honey.Editor
             h.RegisterFieldAttribute(typeof(HValidateAttribute), new HoneyTypeDrawerDefinition(new HValidateDrawer(),null));
             h.RegisterFieldAttribute(typeof(HHelpBoxAttribute), new HoneyTypeDrawerDefinition(new HHelpBoxDrawer(),null));
             h.RegisterFieldAttribute(typeof(HIndentBeforeAttribute), new HoneyTypeDrawerDefinition(new HIndentThisDrawer(),null));
-            h.RegisterFieldAttribute(typeof(HPrefabPreviewAttribute), new HoneyTypeDrawerDefinition(new HPrefabPreviewDrawer(),null));
             h.RegisterFieldAttribute(typeof(HSpritePreviewAttribute), new HoneyTypeDrawerDefinition(new SpritePreviewDrawer(),null));
             h.RegisterFieldAttribute(typeof(EHConstSizeAttributeAttribute), new HoneyTypeDrawerDefinition(null,new EHConstSizeDrawer()));
             

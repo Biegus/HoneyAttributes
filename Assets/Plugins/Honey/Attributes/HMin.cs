@@ -2,6 +2,7 @@
 using Honey;
 using UnityEngine;
 using System;
+using Honey.Helper;
 
 #if UNITY_EDITOR
 using UnityEditor;

@@ -18,7 +18,7 @@ namespace Honey.Editor
         
         private static Regex comparsionRegex =
             new Regex(
-                @"(^(?<left>^[^=><!]*?)(?<operand>[=><!+\-*\/]{1,2})(?<right>[^=><!\n]*)$)|(^((?<left_single>[^=><!]*?$)))");
+                @"(^(?<left>^[^=><!]*?)(?<operand>[=><!+*\/]{1,2})(?<right>[^=><!\n]*)$)|(^((?<left_single>[^=><!]*?$)))");
 
         private static Regex argumentsRegex =
             new Regex(
@@ -31,17 +31,16 @@ namespace Honey.Editor
         public static Func<object, object> ParseExpression(string text, Type type, string itself, HoneyValueParseFlags flags)
         {
             text = text.Replace("itself", itself);
-          
-            
+
             var func= InternalParseExpression(text, type,flags);
             if (flags.HasFlag(HoneyValueParseFlags.StringMode))
                 return (o) => func(o).ToString();
             else return func;
         }
 
-        private static ArgumentException GetElementNotFoundException()
+        private static ArgumentException GetElementNotFoundException(string element)
         {
-             return new ArgumentException($"Honey expression is incorrect: element not found");
+             return new ArgumentException($"Honey expression is incorrect: element not found:\"{element}\"");
         }
         private static Func<object,object> InternalParseExpression(string  text, Type type, HoneyValueParseFlags flags)
         {
@@ -66,15 +65,15 @@ namespace Honey.Editor
                     {
                         return _ => parsed;
                     }
-                    throw GetElementNotFoundException();
+                    throw GetElementNotFoundException(single);
                 }
                 else
                 {
-                    if (float.TryParse(single, NumberStyles.Integer, CultureInfo.InvariantCulture,out float parsed ))
+                    if (float.TryParse(single, NumberStyles.Any, CultureInfo.InvariantCulture,out float parsed ))
                     {
                         return _ => parsed;
                     }
-                    throw GetElementNotFoundException();
+                    throw GetElementNotFoundException(single);
                 }
 
             }
@@ -92,7 +91,7 @@ namespace Honey.Editor
                         .FirstOrDefault(item=>args.Count==item.GetParameters().Length && item.Name==methodName);
                     if (methodInfo==null)
                     {
-                        throw GetElementNotFoundException();
+                        throw GetElementNotFoundException(methodName);
                     }
                     Func<object, object> a=null,b=null;
                     if (args.Count < 1)
@@ -199,10 +198,10 @@ namespace Honey.Editor
             var o= HoneyHandler.HoneyReflectionCache.GetStyleOverrides(type);
             if (string.IsNullOrEmpty(text))
                 return;
-            if (!o.ContainsKey(text))
+            if (!o.ContainsKey(text) && text[0] != '_')
             {
-                if (text[0] != '_')
-                    style = new GUIStyle(text);
+                style = new GUIStyle(text);
+                return;
             }
             var res = o[text];
             res.ApplyOn(ref style);

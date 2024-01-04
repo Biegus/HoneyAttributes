@@ -50,6 +50,11 @@ namespace  Honey.Editor
         {
             return SerializedObject.targetObject;
         }
+
+        public SerializedObject GetUpperSerializedObject()
+        {
+            return this.SerializedObject;
+        }
     }
 }
 #endif

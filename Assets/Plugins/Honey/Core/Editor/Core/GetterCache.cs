@@ -9,6 +9,8 @@ using System.Reflection.Emit;
 using System.Text;
 using Honey.Core;
 using Honey.Editor;
+using Honey.Helper;
+using Object = UnityEngine.Object;
 
 #if  UNITY_EDITOR
 using UnityEditor;
@@ -16,40 +18,56 @@ using UnityEditor;
 
 namespace Honey.Editor
 {
-    public class HoneyValueExpressionGetterCache<T>
+    public interface IHoneyValueExpressionGetterCache
     {
-        private readonly Dictionary<(string name, FieldInfo field,int? index), Func<object, T>> dict = new();
+        public HResult<Func<object, object>,string> GetRaw(string text, FieldInfo field, SerializedProperty property);
+        public HResult<object,string> GetAndInvokeRaw(object container,string text, FieldInfo field, SerializedProperty property);
+    }
 
+    public class HoneyValueExpressionGetterCache<T> : IHoneyValueExpressionGetterCache
+    {
 
-        #if UNITY_EDITOR
-        public Func<object, T> Get(string text, FieldInfo field, SerializedProperty property)
+        private readonly WeakAttributeCache<Dictionary<string, HResult< Func<object, T>,string>>> cache = new();
+
+        /// <summary>
+        /// Returns err either for parsing or invoke error.
+        /// </summary>
+        public HResult<T, string> GetAndInvoke(object container, string expression, FieldInfo field,
+            SerializedProperty property)
         {
-            return Get(text, field, SerializedPropertyHelper.GetIndexOfSerializedPropertyPath(property.propertyPath));
-        }
-        #endif
-        public Func<object, T> Get(string text,FieldInfo field,int? index)
-        {
-            if (dict.TryGetValue((text,field,index), out var result))
-                return result;
-            HoneyValueParseFlags flags = HoneyValueParseFlags.None;
-            if (HoneyReflectionUtility.IsInteger(typeof(T)))
-                flags |= HoneyValueParseFlags.IntegerMode;
-            if (typeof(T) == typeof(string))
+            var fnc = Get(expression, field, property);
+            try
             {
-                flags |= HoneyValueParseFlags.StringMode;
+                return fnc.Map(e => e(container));
             }
-            
-            var expr= HoneyValueParser.ParseExpression(text, field.ReflectedType,field.Name, 
-                flags);
-            return dict[(text, field,index)] =
-                (obj) => (T)expr(obj);
+            catch (Exception exception)
+            {
+                return HResult<T, string>.Err(
+                    $"Error while executing honey expression: \"{expression}\" \n: Err:{exception.Message}");
+            }
         }
+        public HResult<Func<object, T>, string> Get(string text,FieldInfo field, SerializedProperty property)
+        {
+            return cache.GetOrElseInsert(property, null, () => new())
+                .GetOrElseInsert(text, () => HoneyExpressionHelper.DoAndCatch<T>(text, field));
+        }
+
+        public HResult< Func<object, object>,string> GetRaw(string text, FieldInfo field, SerializedProperty property)
+        {
+            return Get(text, field, property).Map<Func<object, object>>(e => a => e(a).ToNonNullable()!);
+        }
+
+        public HResult<object, string> GetAndInvokeRaw(object container,string text, FieldInfo field, SerializedProperty property)
+        {
+            return GetAndInvoke(container,text, field, property).Map(e => ((object?) e).ToNonNullable());
+        }
+    }
     }
     public class GetterCache<T>
     {
         private readonly Dictionary<(string name, MemberInfo field), Func<object, T>> dict = new();
 
-     
+
         public Func<object, T> Get(string name,MemberInfo identity)
         {
             if (dict.TryGetValue((name,identity), out var result))
@@ -58,9 +76,9 @@ namespace Honey.Editor
             if (getter == null)
                 throw new ArgumentException("getter was not found");
             return dict[(name,identity)] = getter;
-            
+
         }
-    }
-    
+
+
 }
 #endif

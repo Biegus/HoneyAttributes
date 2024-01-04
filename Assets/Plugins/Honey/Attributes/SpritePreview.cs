@@ -15,14 +15,13 @@ namespace Honey.Editor
     {
         public bool RequestHierarchyQuery => false;
 
-        private Dictionary<(FieldInfo field, object inst, int? index), bool> folderCache =
-            new Dictionary<(FieldInfo field, object inst, int? index), bool>();
 
-        private bool GetFoldout(in HoneyDrawerInput inp,int? index, bool defaultValue)
+        private readonly WeakAttributeCache<bool> onOffCache = new();
+
+        private bool GetFoldout(in HoneyDrawerInput inp,bool defaultValue, HoneyAttribute attribute)
         {
                 
-            return folderCache.GetOrInsert(
-                (inp.Field, inp.SerializedProperty.serializedObject.targetObject, index), defaultValue);
+            return onOffCache.GetOrElseInsert(inp.SerializedProperty,attribute,()=> defaultValue);
         }
         public float GetHeight(in HoneyDrawerInput inp, AdditionalDrawerCallType type, HoneyAttribute attribute)
         {
@@ -31,13 +30,10 @@ namespace Honey.Editor
             if (type == AdditionalDrawerCallType.After)
             {
                    
-                int? index =
-                    SerializedPropertyHelper.GetIndexOfSerializedPropertyPath(inp.SerializedProperty.propertyPath);
                 UnityEngine.Object rf = inp.SerializedProperty.objectReferenceValue;
                 if (rf is Sprite sprite && sprite.texture != null&&
-                    (!atr.Expandable || GetFoldout(inp,index,atr.DefaultExpandable) ))
+                    (!atr.Expandable || GetFoldout(inp,atr.DefaultExpandable,atr) ))
                     return EditorGUIUtility.singleLineHeight * atr.Lines;
-
             }
                   
             return 0;
@@ -53,9 +49,9 @@ namespace Honey.Editor
                 Rect movedBack = rect;
                 movedBack.y -= EditorGUIUtility.singleLineHeight;
                 movedBack.height = EditorGUIUtility.singleLineHeight;
-                folderCache[(inp.Field, inp.SerializedProperty.serializedObject.targetObject, index)] =
-                    EditorGUI.Foldout(movedBack, GetFoldout(inp, index,atr.DefaultExpandable),"",true);
-                   
+
+                bool result= EditorGUI.Foldout(movedBack, GetFoldout(inp,atr.DefaultExpandable,attribute),"",true);
+                onOffCache.Set(inp.SerializedProperty, atr, result);
             }
               
                 
@@ -74,11 +70,16 @@ namespace Honey.Editor
 
 namespace Honey
 {
+    /// <summary>
+    /// Attributes for Sprite. 
+    /// Renders a little preview below it. 
+    /// </summary>
     public class HSpritePreviewAttribute : HoneyAttribute
     {
         public int Lines { get; }
         public bool Expandable { get; }
         public bool DefaultExpandable { get; set; }
+
         public HSpritePreviewAttribute(int lines=4, bool expandable=false)
         {
             Lines = lines;

@@ -14,10 +14,6 @@ namespace Honey.Editor
         public bool RequestHierarchyQuery => true;
         private static HoneyValueExpressionGetterCache<bool> cache = new HoneyValueExpressionGetterCache<bool>();
 
-        private class Data
-        {
-            public Color Old;
-        }
         //hacky avoiding dividing by zero
         private Color Push(Color color)
         {
@@ -33,13 +29,15 @@ namespace Honey.Editor
             }
             if (atr.BExpression != string.Empty)
             {
-                if (!cache.Get(atr.BExpression, inp.Field,inp.SerializedProperty)(inp.Container))
+
+                //error is displayer in after
+                if (!(cache.GetAndInvoke(inp.Container, atr.BExpression, inp.Field,inp.SerializedProperty).Map(e => e).UnwrapOr(false)))
                 {
                     return;
                 }   
             }
             Color color = Push(atr.Color.Value);
-            inp.TempMemory.Add((this,inp.Field),new Data(){Old = GUI.color });
+            inp.TempMemory.Push(GUI.color);
             Color reverse = new Color(1f /color.r, 1f / color.g, 1f / color.b, 1f / color.a);
 
             if (atr.DontIncludeLabel)
@@ -62,13 +60,21 @@ namespace Honey.Editor
             }
             if (atr.BExpression != string.Empty)
             {
-                if (!cache.Get(atr.BExpression, inp.Field,inp.SerializedProperty)(inp.Container))
+                var maybeboolean= cache.GetAndInvoke(inp.Container, atr.BExpression, inp.Field, inp.SerializedProperty);
+                if (maybeboolean.TryError(out var error))
+                {
+                    inp.Listener.LogLocalWarning($"BExpression failed: {error}",inp.Field,attribute);
+                    return;
+                }
+                var boolean = maybeboolean.Unwrap();
+                if (!boolean)
                 {
                     return;
                 }   
             }
-            var data= inp.TempMemory.TakeAndRemove<Data>((this,inp.Field));
-            GUI.color = data.Old;
+
+            var data = (Color)inp.TempMemory.Pop();
+            GUI.color = data;
             Color color = Push(atr.Color.Value);
             if (atr.DontIncludeLabel)
             {

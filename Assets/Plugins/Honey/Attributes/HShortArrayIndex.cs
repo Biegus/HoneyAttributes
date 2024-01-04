@@ -14,6 +14,7 @@ namespace Honey.Editor
 
         public GUIContent GetCustomContent(in HoneyDrawerInput inp, HoneyAttribute attribute, GUIContent content)
         {
+
             content.text= content.text.Replace("Element", "");
             return content;
         }

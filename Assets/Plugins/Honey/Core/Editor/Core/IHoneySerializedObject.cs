@@ -15,6 +15,7 @@ namespace  Honey.Editor
         void Update();
         void ApplyModifiedProperties();
         public object GetLowestTarget();
+        public SerializedObject GetUpperSerializedObject();
     }
 }
 #endif

@@ -31,12 +31,15 @@ namespace Honey.Editor
 
 namespace Honey
 {
+    /// <summary>
+    /// Attribute for strings.
+    /// Makes only options possible to input valid tags, selected from dropdown
+    /// </summary>
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
     public class TagAttribute : PropertyAttribute
     {
 
     }
-#if UNITY_EDITOR
-#endif
+
 
 }

@@ -2,6 +2,7 @@
 using UnityEngine;
 namespace Honey.Objects
 {
+    //TODO: not documented
     [Serializable]
     public struct HoneyOptional<T>
     {

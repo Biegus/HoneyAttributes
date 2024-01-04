@@ -8,14 +8,20 @@ using System.Reflection;
 using System.Text;
 using Honey;
 using Honey.Helper;
+using Honey.Validation;
+using PlasticGui.Configuration.CloudEdition.Welcome;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.WSA;
+using Application = UnityEngine.Application;
 using Debug = UnityEngine.Debug;
 
 namespace  Honey.Editor
 {
-    
-    public interface IGroupElement
+
+    //Closed inheritance (fake sum type), should not be derived from
+    //should always be either  ContentGroupElement or Group
+    public  interface IGroupElement
     {
         Group? Father { get; }
     }
@@ -23,13 +29,11 @@ namespace  Honey.Editor
     [CanEditMultipleObjects]
     public class HoneyEditor : UnityEditor.Editor
     {
-      
-
         private HoneyEditorHandler? master;
+
         private void OnEnable()
         {
-            
-            master = new HoneyEditorHandler(new HoneySerializedObjectDummy(serializedObject));
+            master = new HoneyEditorHandler(new HoneySerializedObjectDummy(serializedObject),string.Empty);
             master.OnEnable();
         }
 
@@ -42,9 +46,12 @@ namespace  Honey.Editor
                 Debug.LogError("master handler was not initialized");
                 return;
             }
-            master.OnInspectorGUI(base.OnInspectorGUI);
+            master.OnInspectorGUI(()=>DrawDefaultInspector());
+        }
 
-
+        private void OnDisable()
+        {
+            master?.Dispose();
         }
     }
     public class HoneyEditorHandler 
@@ -63,6 +70,8 @@ namespace  Honey.Editor
             }
         }
 
+        //Closed inheritance (fake sum type), should not be derived from
+        //should always be either  PropertyData or CustomMemberData
         public interface IEditorData
         {
             public FolderPath? Path { get; }
@@ -89,7 +98,7 @@ namespace  Honey.Editor
         {
             public HoneyRuntimeField? Drawer { get; set; }
             public HoneyEditorHandler? Handler { get; set; }
-            public SubEditorMode? SubMode { get; set; }
+            public AllowSubEditorAttribute? SubMode { get; set; }
             public FieldInfo Field { get; set; }
             public SerializedProperty SerializedProperty { get;  }
             public FolderPath? Path { get; set; }
@@ -106,29 +115,46 @@ namespace  Honey.Editor
         
 
 
+
         public IHoneySerializedObject HoneySerializedObject { get; }
+        private readonly HoneyLogger errors = new ();
+        private readonly HoneyLogger warnings = new ();
+        private readonly HoneyLogger localWarnings = new ();
+        private readonly IReadOnlyDictionary<string, HoneyRuntimeGroupDefinition> groupsDefinition;
+        private readonly Stack<object> tempMemory = new ();
+        private readonly HoneyErrorListener listener;
+
+        public string InnerPath { get; private set; }
+
         private IEditorData[]? elements=null;
         private SerializedProperty? scriptProperty=null;
-        private bool incorrectState = false;
-        private readonly HoneyLogger errors = new HoneyLogger();
-        private readonly HoneyLogger warnings = new HoneyLogger();
-        private readonly HoneyLogger localWarnings = new HoneyLogger();
-        private TimeSpan guiTime;
-        private readonly IReadOnlyDictionary<string, HoneyRuntimeGroupDefinition> groupsDefinition;
-        private readonly HoneyTempTempMemory tempMemory = new HoneyTempTempMemory();
-        private readonly HoneyErrorListener listener;      
-
-
         private Group? masterGroup;
-     
 
-        public HoneyEditorHandler(IHoneySerializedObject obj)
+        private bool incorrectState = false;
+        private bool changed=true;
+
+        public HoneyEditorHandler(IHoneySerializedObject obj, string innerPath)
         {
-            HoneySerializedObject = obj;
+
+            HoneySerializedObject = obj?? throw new ArgumentNullException();
             listener = new HoneyErrorListener(errors, localWarnings, warnings);
             groupsDefinition = HoneyHandler.HoneyReflectionCache.GetGroupData(this.HoneySerializedObject.GetObjType());
+            InnerPath = innerPath?? throw new ArgumentNullException();
         }
-      
+
+        //returns true if new element is added
+        private bool HandleStack(Stack<FolderPath> stack,MemberInfo info)
+        {
+
+                var endAtr = info.GetCustomAttributes<Honey.EEndGroupAttribute>();
+                for(int i=0;i<endAtr.Count();i++)
+                    stack.Pop();
+
+                var beginAttr = info.GetCustomAttribute<EBeginGroupAttribute>();
+                if (beginAttr == null) return false;
+                stack.Push( new FolderPath(beginAttr.Path));
+                return true;
+        }
         private void InternalEnable()
         {
             bool empty = false;
@@ -168,6 +194,8 @@ namespace  Honey.Editor
                     list.Add(iter.Copy());
                 } while (iter.NextVisible(false));
             int indx = 0;
+            Stack<FolderPath> stack = new();
+
             var props = list.Select<SerializedProperty, PropertyData?>((property, i) =>
                 {
                     FieldInfo? field = HoneySerializedObject.GetObjType().GetField(property.name,
@@ -182,16 +210,16 @@ namespace  Honey.Editor
                         Index = i
                     };
                     indx = i;
-                   
+
                     var subAtr = HoneySerializedObject.GetHierarchyQuery(property.propertyPath).FinalType
                         .GetCustomAttribute<AllowSubEditorAttribute>();
                     if (subAtr != null)
                     {
-                        data.Handler = new HoneyEditorHandler(new HoneySubSerializedObject(data.SerializedProperty));
+                        data.Handler = new HoneyEditorHandler(new HoneySubSerializedObject(data.SerializedProperty),$"{InnerPath}/{field.Name}");
                         data.Handler.OnEnable();
-                        data.SubMode = subAtr.Mode;
+                        data.SubMode = subAtr;
                     }
-                   
+
 
                     data.Field = field;
                     if (field.GetCustomAttribute<EHoneyRun>() != null)
@@ -202,12 +230,20 @@ namespace  Honey.Editor
                                 $"You should not use HoneyRun attribute on pair with EHoneyRun. Found one pair at \"{field.FieldType} {field.Name}\"\n" +
                                 $"[Use HoneyRun when you want to apply attributes to elements, use EHoneyRun when you want to apply them to the whole list]");
 
-                            return data; //skip adding drawer
                         }
-
-                        data.Drawer = HoneyHandler.HoneyReflectionCache.Get(field);
+                        else
+                            data.Drawer = HoneyHandler.HoneyReflectionCache.Get(field);
                     }
-                    data.Path = GetPath(data.Field);
+
+                    HandleStack(stack, data.Field);
+                    if (stack.Count > 0)
+                    {
+                        data.Path = stack.Peek();
+                    }
+                    else
+                    {
+                        data.Path =  GetPath(data.Field);
+                    }
                     return data;
 
                 })
@@ -355,7 +391,7 @@ namespace  Honey.Editor
         private void OnHoneyInspectorGUI()
         {
             HoneyErrorListenerStack.Push(listener);
-            if (tempMemory.GetSize() > 0)
+            if (tempMemory.Count > 0)
             {
                 localWarnings.Log ("Temp memory was not clean");
                 tempMemory.Clear();
@@ -364,7 +400,9 @@ namespace  Honey.Editor
             if (scriptProperty != null)
                 EditorGUILayout.PropertyField(scriptProperty);
             GUI.enabled = true;
-         
+
+
+
             if (errors.ToString().Length > 0)
             {
                 EditorGUILayout.BeginHorizontal();
@@ -396,22 +434,25 @@ namespace  Honey.Editor
                LogError("master group was not set");
                return;
             }
+
+            EditorGUI.BeginChangeCheck();
             DrawGroup(masterGroup);
+            changed = EditorGUI.EndChangeCheck();
+
             HoneyErrorListenerStack.Pop();
 
 
         }
 
+
+
+
         public void DrawGroup(Group g)
         {
-            Action<string, string,HoneyEditorHandler,Attribute?,Group> action;
             if (g.Drawer == null)
-                action = (_, _, _,_,gg) => {DrawGroupContent(gg); };
+                 DrawGroupContent(g);
             else
-                action = g.Drawer.DrawLayout;
-            action(g.Path, g.Name, this, g.GroupAttribute, g);
-
-
+               g.Drawer.DrawLayout(g.Path,g.Name,this,g.GroupAttribute,g,InnerPath);
         }
 
         public  void  DrawGroupContent(Group g)
@@ -435,7 +476,6 @@ namespace  Honey.Editor
                 if (propertyData.Handler != null)
                 {
                 
-                    
                     HandlePreBuildSubEditor(()=>propertyData.Handler.OnInspectorGUI(() => PropertyGUIIgnoreSubEditors(propertyData)),propertyData);
               
                 }
@@ -457,14 +497,33 @@ namespace  Honey.Editor
                 Debug.LogError("SubMode was not defined");
                 return;
             }
-            switch (propertyData.SubMode.Value)
+            switch (propertyData.SubMode.Mode)
             {
                 case SubEditorMode.VectLike:
                     HandleVectLikeSubEditor(body,propertyData);
                     break;
                 case SubEditorMode.Normal:
-                    HandleNormalSubEditor(body,propertyData);
+                    HandleSubWithFoldoutAndIndent(body,propertyData,propertyData.SubMode.Foldout);
                     break;
+                case SubEditorMode.Box:
+                    EditorGUILayout.BeginVertical("box");
+                    HandleSubWithFoldoutAndIndent(body,propertyData,propertyData.SubMode.Foldout);
+                    EditorGUILayout.EndHorizontal();
+                    break;
+                case SubEditorMode.BoxGroup:
+                    EditorGUILayout.BeginVertical("GroupBox");
+                    HandleSubWithFoldoutAndIndent(body,propertyData,propertyData.SubMode.Foldout);
+                    EditorGUILayout.EndHorizontal();
+                    break;
+                case SubEditorMode.Inline:
+                    EditorGUILayout.BeginVertical();
+                    body();
+                    EditorGUILayout.EndVertical();
+                    break;
+
+
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
 
@@ -473,7 +532,7 @@ namespace  Honey.Editor
             EditorGUILayout.BeginHorizontal();
             float old = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth /= 2.2f;
-            EditorGUILayout.LabelField(propertyData.SerializedProperty.displayName,new GUIStyle(EditorStyles.boldLabel)
+            EditorGUILayout.LabelField(propertyData.SerializedProperty.displayName,new GUIStyle(EditorStyles.label)
             {
             
                 fixedWidth = EditorGUIUtility.labelWidth/2f,
@@ -490,12 +549,20 @@ namespace  Honey.Editor
             EditorGUILayout.EndHorizontal();
         }
 
-        private void HandleNormalSubEditor(Action body, PropertyData data)
+        private void HandleSubWithFoldoutAndIndent(Action body, PropertyData data,bool? foldout)
         {
-            data.SerializedProperty.isExpanded = EditorGUILayout.Foldout(data.SerializedProperty.isExpanded,
-                data.SerializedProperty.displayName,true);
-            if (!data.SerializedProperty.isExpanded)
-                return;
+            bool fol = foldout ?? true;
+            if (fol)
+            {
+                data.SerializedProperty.isExpanded = EditorGUILayout.Foldout(data.SerializedProperty.isExpanded,
+                    data.SerializedProperty.displayName,true);
+                if (!data.SerializedProperty.isExpanded)
+                    return;
+            }
+            else
+            {
+                EditorGUILayout.LabelField(data.SerializedProperty.displayName);
+            }
             EditorGUI.indentLevel++;
             body();
             EditorGUI.indentLevel--;
@@ -523,7 +590,7 @@ namespace  Honey.Editor
                 {
                     HoneyEG.PropertyFieldLayout(propertyData.SerializedProperty,null);
                 });
-              
+
             }
             else
             {
@@ -534,16 +601,33 @@ namespace  Honey.Editor
               
                 DoSafe(() =>
                 {
-                    float height = propertyData.Drawer.QueryHeight(propertyData.SerializedProperty, propertyData.Field, title,listener,true,1f,tempMemory);
+                    float height = propertyData.Drawer.QueryHeight(propertyData.SerializedProperty, propertyData.Field, title,listener,true,tempMemory);
                     Rect rect = EditorGUILayout.GetControlRect(hasLabel: true, height);
-                    propertyData.Drawer.OnGui(propertyData.SerializedProperty,propertyData.Field,rect,tempMemory,title,listener,true);
+                    propertyData.Drawer.OnGui(propertyData.SerializedProperty,propertyData.Field,rect,tempMemory,title,listener,true,changed);
 
                 });
                 
             }
 
         }
-        
+
+
+        public void Dispose()
+        {
+            if (masterGroup == null) return;
+
+            var groups = new Stack<Group>();
+            groups.Push(masterGroup);
+            while (groups.Count > 0)
+            {
+                var group = groups.Pop();
+
+                foreach (var innerGroup in group.Elements.OfType<Group>())
+                    groups.Push(innerGroup);
+
+                group.Drawer?.DisposeEditor(this);
+            }
+        }
     }
 }
 #endif

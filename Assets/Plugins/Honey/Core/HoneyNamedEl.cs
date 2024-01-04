@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Honey.Core
 {
-    public class HoneyNamedEl
+    public struct HoneyNamedEl
     {
         public string Name { get; }
         public object Value { get; }

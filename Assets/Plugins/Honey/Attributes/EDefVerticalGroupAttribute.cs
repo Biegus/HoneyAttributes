@@ -1,9 +1,11 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Honey;
 using Honey.Helper;
 #if UNITY_EDITOR
+using Honey.Core;
 using UnityEditor;
 #endif
 using UnityEngine;
@@ -13,8 +15,8 @@ namespace Honey.Editor
     #if UNITY_EDITOR
     public class EDefVerticalGroupDrawer : IHoneyGroupDrawer
     {
-        private Dictionary<object, Dictionary<string, bool>> onOffDict =
-            new();
+
+        private readonly WeakAttributeCache<bool> onOff = new();
 
         private Lazy<GUIStyle> boldFoldout = new Lazy<GUIStyle>(() => new GUIStyle("foldout")
         {
@@ -22,8 +24,9 @@ namespace Honey.Editor
         });
 
         public void DrawLayout(string groupPath, string name, HoneyEditorHandler editor, Attribute attribute,
-            Group group)
+            Group group, string innerPath)
         {
+            //EditorGUILayout.HelpBox((onOff.AsEnumearble.SelectMany(item=>item.Value.Select(el=>(item.Key,el.Key,el.Value))).ToStringFromCollection("\n")),MessageType.Info);
             var atr = attribute.As<EDefVerticalGroupAttribute>();
             int old = EditorGUI.indentLevel;
             switch (atr.Appearance)
@@ -39,52 +42,39 @@ namespace Honey.Editor
                     break;
                 default: break;
             }
+            string realName = atr.CustomLabel ?? (atr.ShowLabel ? name : string.Empty);
 
             if (atr.Foldout)
             {
-                    
-                string code = string.Empty;
-                if (editor.HoneySerializedObject.GetInstance() is UnityEngine.Object obj1)
-                    code = $"_honey_group_foldout_{obj1.GetInstanceID()}_{groupPath}";
-                if (!onOffDict.ContainsKey(editor))
-                    onOffDict[editor] = new Dictionary<string, bool>();
-                if (!onOffDict[editor].ContainsKey(groupPath))
-                {
-                    if (code!=string.Empty && EditorPrefs.HasKey(code))
-                    {
-                        onOffDict[editor][groupPath] = EditorPrefs.GetBool(code);
-                    }
-                    else
-                        onOffDict[editor][groupPath] = false;
-                }
+                string key = $"{innerPath}//{groupPath}";
+                SerializedObject upper = editor.HoneySerializedObject.GetUpperSerializedObject();
 
-                onOffDict[editor][groupPath] = EditorGUILayout.Foldout(onOffDict[editor][groupPath], name,
-                    style: boldFoldout.Value, toggleOnLabelClick: true);
-                EditorGUI.indentLevel += atr.Indentation;
-                if (onOffDict[editor][groupPath])
-                    editor.DrawGroupContent(@group);
-                if (code!=string.Empty)
+                bool result=onOff.Update(upper.targetObject, key,attribute, () => false,
+                    value => EditorGUILayout.Foldout(value, realName, style: boldFoldout.Value,
+                        toggleOnLabelClick: true));
+
+                if (result)
                 {
-                    EditorPrefs.SetBool(code,onOffDict[editor][groupPath]);
+                    EditorGUI.indentLevel += atr.Indentation;
+                    editor.DrawGroupContent(group);
                 }
             }
             else
             {
-                if (atr.ShowLabel && !string.IsNullOrEmpty(groupPath))
+                if (realName != string.Empty)
                     EditorGUILayout.LabelField(name, EditorStyles.boldLabel);
                 EditorGUI.indentLevel += atr.Indentation;
 
-                editor.DrawGroupContent(@group);
+                editor.DrawGroupContent(group);
             }
             EditorGUILayout.EndVertical();
             EditorGUI.indentLevel = old;
                 
         }
 
-        public void OnEditorDisable(HoneyEditorHandler editor)
+        public void DisposeEditor(HoneyEditorHandler editor)
         {
-            onOffDict.Remove(editor);
-               
+
         }
     }
     #endif
@@ -115,16 +105,18 @@ namespace Honey
         public int Indentation { get; }
         public bool Foldout { get; }
         public bool ShowLabel { get; }
+        public string? CustomLabel { get; }
 
         public EDefVerticalGroupAttribute(string path, BaseGroupAppearance appearance, bool foldout = false,
             int indentation = 1,
-            bool showLabel = true)
+            bool showLabel = true,string? customLabel=null)
             : base(path)
         {
             Appearance = appearance;
             Foldout = foldout;
             Indentation = indentation;
             ShowLabel = showLabel;
+            CustomLabel = customLabel;
         }
     }
 

@@ -13,11 +13,15 @@ namespace Honey.Editor
          void LogError(string text,MemberInfo? member, Attribute? attribute);
          void LogLocalWarning(string text,MemberInfo? member, Attribute? attribute);
          void LogGlobalWarning(string text,MemberInfo? member, Attribute? attribute);
-         
+
+         void MaybeLogLocalWarning(string text, MemberInfo? member, Attribute? attribute)
+         {
+         }
     }
 
     public class DummyListener : IHoneyErrorListener
     {
+
         public static DummyListener Instance { get; } = new DummyListener();
         public void LogError(string text, MemberInfo? memberInfo = null, Attribute? attribute = null)
         {
@@ -80,7 +84,7 @@ namespace Honey.Editor
             else if (memberInfo == null && attribute!=null)
                 return $"[{attribute.GetType().Name}]->{text}";
             else
-                return $"[{attribute!.GetType().Name}]{memberInfo!.Name}->{text}";    
+                return $"[{attribute!.GetType().Name}] {memberInfo!.DeclaringType!.Name} {memberInfo.Name}->{text}";
         }
     }
 
@@ -100,6 +104,11 @@ namespace Honey.Editor
         public void LogError(string text, MemberInfo? memberInfo = null, Attribute? attribute = null)
         {
             ErrorLogger.Log(HoneyErrorListenerHelper.BuildMessage(text,memberInfo,attribute));
+        }
+
+        public void MaybeLogLocalWarning(string text, MemberInfo? member, Attribute? attribute)
+        {
+             LogLocalWarning(text,member,attribute);
         }
 
         public void LogLocalWarning(string text, MemberInfo? memberInfo = null, Attribute? attribute = null)

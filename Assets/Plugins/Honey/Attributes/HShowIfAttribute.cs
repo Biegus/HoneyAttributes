@@ -25,15 +25,13 @@ namespace Honey.Editor
 
         public bool Check(in HoneyDrawerInput inp, HShowIfAttribute attribute)
         {
-            try
+            var maybeResult = cache.GetAndInvoke(inp.Container, attribute.Expr, inp.Field, inp.SerializedProperty);
+            if (maybeResult.TryError(out string err))
             {
-                return cache.Get(attribute.Name, inp.Field, inp.SerializedProperty)(inp.Container);
-            }
-            catch (Exception exception)
-            {
-                inp.Listener.LogLocalWarning(exception.Message,inp.Field,attribute);
+                inp.Listener.LogLocalWarning(err,inp.Field,attribute);
                 return true;
             }
+            return maybeResult.Unwrap();
         }
 
 
@@ -53,11 +51,11 @@ namespace Honey
     public class HShowIfAttribute : HoneyAttribute
     {
             
-       public string Name { get; }
+       public string Expr { get; }
         public HoneyPropertyState State { get;  }
-        public HShowIfAttribute(string name,HoneyPropertyState state=HoneyPropertyState.Hidden)
+        public HShowIfAttribute(string expr,HoneyPropertyState state=HoneyPropertyState.Hidden)
         {
-            Name = name;
+            Expr = expr;
             this.State = state;
         }
     

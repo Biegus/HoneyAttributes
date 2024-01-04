@@ -20,6 +20,15 @@ namespace Honey.Objects
         NotIfObjectIsNotEnabled=1<<2,
         NotIfObjectIsEnabled=1<<3,
     }
+    public static class InspectorButtonLimitsHelper{
+        public static bool CheckIfFails(this InspectorButtonLimits flags, bool isPlaying, bool isActive)
+        {
+            return (flags.HasFlag(InspectorButtonLimits.NotInEditorMode) && !isPlaying)
+                    || (flags.HasFlag(InspectorButtonLimits.NotInPlayMode) && isPlaying)
+                    || (flags.HasFlag(InspectorButtonLimits.NotIfObjectIsEnabled) && isActive)
+                    || (flags.HasFlag(InspectorButtonLimits.NotIfObjectIsNotEnabled) && !isActive);
+        }
+    }
     public class InspectorButtonDataAttribute: PropertyAttribute
     {
         public string Name { get; }

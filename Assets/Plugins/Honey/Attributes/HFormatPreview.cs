@@ -69,7 +69,16 @@ namespace Honey.Editor
                 {
 
                     int i = 0;
-                    foreach (var el in arrayCache.Get(atr.ArrayExpression, inp.Field,inp.SerializedProperty)(inp.Container))
+                    var maybeArray = arrayCache.GetAndInvoke(inp.Container, atr.ArrayExpression, inp.Field,
+                        inp.SerializedProperty);
+
+                    if (maybeArray.TryError(out var error))
+                    {
+                        inp.Listener.LogLocalWarning($"For array expression: {error}",inp.Field,attribute);
+                        return;
+                    }
+
+                    foreach (var el in maybeArray.Unwrap())
                     {
                         if(i>=values.Length)
                             break;
@@ -81,8 +90,14 @@ namespace Honey.Editor
                 {
                     for(int i=0;i<Math.Min( len, atr.References.Count);i++)
                     {
-                        var value = cache.Get(atr.References[i], inp.Field,inp.SerializedProperty)(inp.Container);
-                        values[i] = value;
+                        var maybeValue = cache.GetAndInvoke(inp.Container, atr.References[i], inp.Field,
+                            inp.SerializedProperty);
+                        if (maybeValue.TryError(out var error))
+                        {
+                            inp.Listener.LogLocalWarning($"For reference at i={{i}}: {error}", inp.Field, attribute);
+                            return;
+                        }
+                        values[i] = maybeValue.Unwrap();
                     }
                 }
 

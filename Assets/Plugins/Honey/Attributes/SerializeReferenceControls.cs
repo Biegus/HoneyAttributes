@@ -6,6 +6,7 @@ using UnityEngine;
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Honey.Editor;
 using Honey.Core;
 using UnityEditor;
@@ -17,7 +18,11 @@ namespace Honey.Editor
     public class SerializeReferenceHelperDrawer : PropertyDrawer
     {
         private SearchProvider? provider;
-        private Dictionary<object,HoneySerializedPropertyId> refs = new();//to avoid duplication problems, it's not really memory leak property drawers are disposed all the time
+
+
+        //not perfect, this dictionary will make "objects" sometimes live a little longer
+        //this shouldn't be real problemy, property drawers are discarded relatively often
+        private Dictionary<object,(UnityEngine.Object obj, string path)> refs = new();
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             return EditorGUI.GetPropertyHeight(property);
@@ -31,13 +36,24 @@ namespace Honey.Editor
 
             int? index = SerializedPropertyHelper.GetIndexOfSerializedPropertyPath(property.propertyPath);
 
-            var refKey = new HoneySerializedPropertyId(fieldInfo, property.serializedObject.targetObject, index);
-            if (property.managedReferenceValue != null)
+            var refKey = (property.serializedObject.targetObject, property.propertyPath);
+
+            if (property.managedReferenceValue != null  )
             {
+
                 if (refs.ContainsKey(property.managedReferenceValue))
                 {
                     if (refs[property.managedReferenceValue] != refKey)
-                        property.managedReferenceValue = Activator.CreateInstance(property.managedReferenceValue.GetType());
+                    {
+                        if (property.managedReferenceValue is ICloneable cl)
+                        {
+                            property.managedReferenceValue = cl.Clone();
+                        }
+                        else
+                        {
+                            property.managedReferenceValue = Activator.CreateInstance(property.managedReferenceValue.GetType());
+                        }
+                    }
                 }
                 else
                 {
@@ -51,18 +67,18 @@ namespace Honey.Editor
 
                 provider ??= ScriptableObject.CreateInstance<SearchProvider>();
                   
-                Type type = HoneyReflectionUtility.GetBaseTypeOfArrayListOrItself(fieldInfo.FieldType);
+                Type type = HoneyReflectionUtility.FlattenCollectionType(fieldInfo.FieldType);
                 int i = 0;
                 var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(item => item.DefinedTypes)
                     .Where(
-                        item => item.FullName.Contains(atr.NamespaceBase)
+                        item => (item.FullName??"").Contains(atr.NamespaceBase)
                                 && !item.IsAbstract 
                                 && !item.IsInterface 
                                 && !item.ContainsGenericParameters
                                 && !typeof(UnityEngine.Object).IsAssignableFrom(item)
                                 && (atr.AllowAnonymous|| !item.Name.StartsWith("<>"))
                                                                            
-                                && item.DeclaredConstructors.Any(constr=>constr.GetParameters().Length==0)
+                                && (item.IsValueType ||item.DeclaredConstructors.Any(constr=>constr.GetParameters().Length==0))
                                 && type.IsAssignableFrom(item) 
                                                                              
                                 && (++i) <= 5000);
@@ -84,6 +100,7 @@ namespace Honey.Editor
 
         }
 
+        //inhriting from scriptable object is required for some reason
         public class SearchProvider : ScriptableObject, ISearchWindowProvider
         {
             public IEnumerable<Type> Types { get; set; } = Enumerable.Empty<Type>();
@@ -122,6 +139,29 @@ namespace Honey.Editor
 
 namespace Honey
 {
+    //todo: not documented  in readme.md
+
+    /// <summary>
+    /// Draws nice dropdown to choose the type for serialize refernce field.
+    /// Can only be used with [SerializeReference].
+    ///
+    /// NOTE: Serialize are reference in unity are generally messy (also slow).
+    /// Some problems and solutions are listed below.
+    ///
+    /// (1) Its extremely recommened for types that will be in this field to implemenet ICloneable.
+    /// This will be specially noticeable for List of serialize references
+    /// Without ICloneable, moving, or copying element may erase values.
+    /// Serialize references cannot be easily copied as normal serialize elements, and default behaviours is just to copy refernce
+    /// which is practically never desired option.
+    ///
+    /// (2) In general avoid too crazy combinations.
+    /// List of serialize references such that most of them contain their own serialize reference shuld be the limit.
+    /// (in that case definitely implemenet ICloneable for your types)
+    ///
+    /// (3) With older version of unity it used to be case that removing/renaming classes that were used
+    /// sometimes totally corrupted the object.
+    /// This is not the case anymore.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
 
     public class SerializeReferenceHelperAttribute : PropertyAttribute
@@ -136,7 +176,6 @@ namespace Honey
               
             }
     }
-#if UNITY_EDITOR
-#endif
+
 
 }

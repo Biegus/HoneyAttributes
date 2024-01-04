@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using UnityEngine;
 
 namespace Honey.Core
 {
@@ -68,20 +69,13 @@ namespace Honey.Core
                    type == typeof(byte) || type == typeof(sbyte) || type == typeof(long) || type == typeof(ulong);
         }
 
-        public static Type GetBaseTypeOfArrayListOrItself(Type type)
+        public static Type FlattenCollectionType(Type type)
         {
-            if (!type.IsGenericType)
-                return type;
-            if(type.GetGenericTypeDefinition()==typeof(List<>) || typeof(Array).IsAssignableFrom(type))
-            {
-                Type? listInterface = type.GetInterfaces()
-                    .FirstOrDefault(item => item.IsGenericType && item.GetGenericTypeDefinition() == typeof(IList<>));
-                if (listInterface == null)
-                    return type;
-                return listInterface.GetGenericArguments()[0];
-            }
-            else return type;
+            if (type == null) throw new ArgumentNullException(nameof(type));
 
+            return type.GetInterfaces()
+                    .FirstOrDefault(item => item.IsGenericType && item.GetGenericTypeDefinition() == typeof(ICollection<>))
+                    ?.GetGenericArguments()[0] ?? type;
         }
 
         private static Func<TN1, TN2> CastFuncInternalTwo<TO1, TO2, TN1, TN2>(Func<TO1, TO2> func)

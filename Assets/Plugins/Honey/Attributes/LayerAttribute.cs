@@ -29,7 +29,12 @@ namespace Honey.Editor
 #endif
 
 namespace Honey
+
 {
+    /// <summary>
+    /// Attributes for ints.
+    /// Lets pick layer from dropdown.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
     public class LayerAttribute : PropertyAttribute
     {

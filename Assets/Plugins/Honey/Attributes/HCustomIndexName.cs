@@ -5,6 +5,7 @@ using Honey;
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using Object = UnityEngine.Object;
 
 #if UNITY_EDITOR
 using Honey.Core;
@@ -14,7 +15,8 @@ namespace Honey.Editor
     public class HDynamicContentDrawer : IHoneyAdditionalDrawer
     {
         public bool RequestHierarchyQuery => true;
-        private Dictionary<HoneySerializedPropertyId, Func<object, string,object?, string>> funcCache = new();
+      //  private Dictionary<HoneySerializedPropertyId, Func<object, string,object?, string>> funcCache = new();
+        private WeakAttributeCache<Func<object, string, object?, string>> funcCache = new();
 
         private static Func<object, string,object?, string> Convert<TContainer>(Func<TContainer, string,object?, string> func)
         {
@@ -24,9 +26,7 @@ namespace Honey.Editor
         public GUIContent GetCustomContent(in HoneyDrawerInput inp, HoneyAttribute attribute, GUIContent content)
         {
             var atr = (attribute as HDynamicContentAttribute)!;
-            HoneySerializedPropertyId key = new HoneySerializedPropertyId(inp.Field, inp.Container,
-                SerializedPropertyHelper.GetIndexOfSerializedPropertyPath(inp.SerializedProperty.propertyPath));
-            if (funcCache.TryGetValue(key, out var result))
+            if (funcCache.TryGetValue(inp.SerializedProperty, attribute, out var result))
             {
                 content.text = result.Invoke(inp.Container, content.text,inp.Obj);
             }
@@ -47,12 +47,11 @@ namespace Honey.Editor
                 }
                 Delegate? lowLevelDelg= method.CreateDelegate(typeof(Func<,,,>).MakeGenericType(inp.Container.GetType(),typeof(string),typeof(object),typeof(string)));
                        
-                   
                 var final=(Func<object,string,object?,string>) (typeof(HDynamicContentDrawer).GetMethod(nameof(Convert), BindingFlags.NonPublic | BindingFlags.Static))!
                     .MakeGenericMethod(inp.Container.GetType()).Invoke(null, new object[] {lowLevelDelg});
                     
                 content.text = final.Invoke(inp.Container, content.text,inp.Obj);
-                funcCache[key] = final;
+                funcCache.Set(inp.SerializedProperty, attribute, final);
             }
                 
             return content;

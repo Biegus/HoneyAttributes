@@ -146,7 +146,8 @@ namespace Honey.Editor
         {
             groupsTypeReferences[type] = drawer;
         }
-        
+
+        /// This is expensive. Cache if possible.
         public  HierarchyQuery GetHierarchyQuery(string path, Type baseType)
         {
             if (valueReferences.TryGetValue((path, baseType), out HierarchyQuery query))
@@ -158,13 +159,12 @@ namespace Honey.Editor
             
         }
 
+
+        /// This is expensive. Cache if possible.
         public HierarchyQuery GetHierarchyQuery(SerializedProperty property)
         {
-           
             return GetHierarchyQuery(property.propertyPath, property.serializedObject.targetObject.GetType());
-            
-           
-            
+
         }
         public (object? final, object container) ReadObject(SerializedProperty property)
         {

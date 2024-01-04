@@ -76,8 +76,9 @@ namespace Honey.Editor
                 _ => null
             };
         }
-       
-        private static Regex indexRegex = new Regex(@"\[(?<value>\d+)\]");
+
+        //why compiled: will be used often in hot paths
+        private static Regex indexRegex = new Regex(@"\[(?<value>\d+)\]",RegexOptions.Compiled);
 
         public static int? GetIndexOfSerializedPropertyPath(string propertyPath)
         {
@@ -86,14 +87,13 @@ namespace Honey.Editor
                 return int.Parse(match.Groups["value"].Value);
             else return null;
         }
+
+        public static int? GetIndex(this SerializedProperty property)
+        {
+            return GetIndexOfSerializedPropertyPath(property.propertyPath);
+        }
        
 
-
-
-    
-
-       
- 
     }
     
 }

@@ -19,9 +19,17 @@ namespace Honey.Editor
                 
             if (HoneyEG.SideButton(ref rect,"☰"))
             {
+                HResult<IEnumerable, string> maybeResult = cache.GetAndInvoke(inp.Container, atr.References, inp.Field, inp.SerializedProperty);
+                if (maybeResult.TryError(out string error))
+                {
+                    inp.Listener.LogLocalWarning(error,inp.Field,attribute);
+                    body(title, rect);
+                    return;
+                }
+                IEnumerable result = maybeResult.Unwrap();
                 GUI.FocusControl(null);
                 (GUIContent[] names, IEnumerable values) = 
-                    HoneyNamedElHelper.SplitObjectArray( cache.Get(atr.References, inp.Field,inp.SerializedProperty)(inp.Container));
+                    HoneyNamedElHelper.SplitObjectArray( result);
                     
                 HoneyEG.BuildGenericMenu(inp.SerializedProperty.propertyPath, (UnityEngine.Object) inp.Container, values,inp.Field,names)
                     .ShowAsContext();

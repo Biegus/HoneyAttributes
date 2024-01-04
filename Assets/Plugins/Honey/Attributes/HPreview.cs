@@ -13,11 +13,13 @@ namespace Honey.Editor
 {
     public class EHPreviewDrawer : IHoneyMainDrawer
     {
-        public bool RequestHierarchyQuery => false;
+        public bool RequestHierarchyQuery => true;
 
         public HoneyRecursiveMode RecursiveMode => HoneyRecursiveMode.Deepest;
-        private readonly Dictionary<FieldInfo, bool> dict = new Dictionary<FieldInfo, bool>();
-        private readonly Dictionary<HoneySerializedPropertyId, (UnityEditor.Editor editor, UnityEngine.Object rf)> editorCache = new();
+        private readonly WeakAttributeCache<bool> foldout=new();
+        private readonly WeakAttributeCache<UnityEditor.Editor> editorCache = new();
+
+        private static int recursiveCounter; // to block non trivial recursive
         public void Draw(in HoneyDrawerInput inp, Rect rect, HoneyAttribute attribute, GUIContent title, Action<GUIContent, Rect> body)
         {
             body(title,rect);
@@ -27,57 +29,68 @@ namespace Honey.Editor
                   
                 return;
             }
+            if (recursiveCounter > 5)
+            {
+                inp.Listener.LogLocalWarning("Recursive limit exceeded", inp.Field, attribute);
+                   return;
+            }
             if (inp.SerializedProperty.propertyType != SerializedPropertyType.ObjectReference)
             {
-                inp.Listener.LogLocalWarning("Field should be UnityEngine.Object", inp.Field, attribute);
+                inp.Listener.LogLocalWarning("Field should be UnityEngine.Object. This won't work for lists, since it has to work through EHoneyRun", inp.Field, attribute);
                 return;
             }
             if ( inp.SerializedProperty.objectReferenceValue==null || inp.SerializedProperty.objectReferenceValue is GameObject)
             {
                 return;
             }
-            var key = new HoneySerializedPropertyId(inp.Field,
-                inp.SerializedProperty.serializedObject.targetObject,
-                SerializedPropertyHelper.GetIndexOfSerializedPropertyPath(inp.SerializedProperty
-                    .propertyPath));
             Rect mini =rect;
             mini.width /= 3f;
             mini.y += rect.height - EditorGUIUtility.singleLineHeight;
             mini.height = EditorGUIUtility.singleLineHeight;
-            if (!dict.ContainsKey(inp.Field))
-                dict[inp.Field] = true;
-              
-            bool on = dict[inp.Field] = EditorGUI.Foldout(mini, dict[inp.Field], string.Empty,true);
+
+
+            bool on = foldout.GetOrElseInsert(inp.SerializedProperty,attribute, () => false);
+
+            on = EditorGUI.Foldout(mini, on, string.Empty, true);
+            foldout.Set(inp.SerializedProperty.serializedObject.targetObject, inp.SerializedProperty.propertyPath,attribute, on);
+
                  
             body(title, rect);
-            if (@on)
+            if (!on) return;
+
+            if (inp.SerializedProperty.objectReferenceValue == (UnityEngine.Object) inp.Container)
             {
-                 
                 EditorGUI.indentLevel++;
-                EditorGUILayout.BeginVertical("box");
-                   
-                UnityEditor.Editor editor;
-                if (editorCache.TryGetValue(key, out var res)&& res.rf== inp.SerializedProperty.objectReferenceValue && res.editor!=null)
-                {
-                    editor = res.editor;
-                        
-                }
-                else
-                {
-                    editorCache[key] = (
-                        UnityEditor.Editor.CreateEditor(
-                            inp.SerializedProperty.objectReferenceValue),
-                        inp.SerializedProperty.objectReferenceValue);
-                    editor = editorCache[key].editor;
-                }
-
-
-                    
-                editor.OnInspectorGUI();
-                EditorGUILayout.EndVertical();
+                EditorGUILayout.HelpBox("Directly recursive",MessageType.Info);
                 EditorGUI.indentLevel--;
+                return;
             }
-               
+            EditorGUI.indentLevel++;
+
+            EditorGUILayout.BeginVertical("box");
+
+            UnityEditor.Editor editor;
+            if (editorCache.TryGetValue(inp.SerializedProperty,attribute, out var res)&&  res !=null)
+            {
+                editor = res;
+
+            }
+            else
+            {
+                editor = editorCache.Set(inp.SerializedProperty, attribute,
+                    UnityEditor.Editor.CreateEditor(
+                        inp.SerializedProperty.objectReferenceValue));
+
+            }
+
+
+
+            recursiveCounter++;
+            editor.OnInspectorGUI();
+            recursiveCounter--;
+            EditorGUILayout.EndVertical();
+            EditorGUI.indentLevel--;
+
         }
 
         public float GetDesiredAdditionalHeight(in HoneyDrawerInput inp, HoneyAttribute attribute, GUIContent title)

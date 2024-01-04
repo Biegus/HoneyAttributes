@@ -16,25 +16,25 @@ namespace Honey.Editor
 {
     public class HHeaderDrawer : IHoneyAdditionalDrawer
     {
-        private readonly Dictionary<HoneyAttribute,GUIStyle> styles = new();
+        private readonly Dictionary<HoneyAttribute,(GUIStyle style, GUIContent content)> styles = new();
         public bool RequestHierarchyQuery => true;
 
         private void InitStyle(HHeaderAttribute atr,in HoneyDrawerInput inp)
         {
-            if (!styles.ContainsKey(atr))
-            {
-                var style = new GUIStyle(EditorStyles.boldLabel);
-                HoneyValueParser.ParseStyleExpression(atr.StyleExpression, inp.Container.GetType(), ref style);
-                styles[atr]=style;
-            }
+            if (styles.ContainsKey(atr)) return;
+
+            GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+            HoneyValueParser.ParseStyleExpression(atr.StyleExpression, inp.Container.GetType(), ref style);
+            styles[atr] = (style, new GUIContent(atr.Header,atr.Tooltip));
         }
         public float GetHeight(in HoneyDrawerInput inp, AdditionalDrawerCallType type, HoneyAttribute attribute)
         {
             HHeaderAttribute atr = attribute.As<HHeaderAttribute>();
             InitStyle(atr,inp);
-            GUIStyle style = styles[attribute];
+
+            (GUIStyle style, GUIContent content) = styles[attribute];
             if (type == AdditionalDrawerCallType.PreBefore)
-                return style!.CalcHeight(atr.Content,1f);
+                return style!.CalcHeight(content,1f);
             else return 0;
         }
 
@@ -44,9 +44,9 @@ namespace Honey.Editor
             InitStyle(atr,inp);
 
             rect = EditorGUI.IndentedRect(rect);
-            GUIStyle style = styles[attribute];
-                
-            GUI.Label(rect,  (attribute as HHeaderAttribute)!.Content, style);
+            (GUIStyle style, GUIContent content) = styles[attribute];
+
+            GUI.Label(rect, content, style);
         }
     }
 }
@@ -60,12 +60,6 @@ namespace Honey
         public string Header { get; }
         public string Tooltip { get; }
         
-   
-        
-        private GUIContent? lazyContent;
-        private GUIStyle? lazyStyle;
-        public GUIContent Content => lazyContent ??=  new GUIContent(Header, Tooltip);
-        public GUIStyle? StyleInstance => lazyStyle ??= (StyleExpression==null)?null: new GUIStyle(StyleExpression);
         public string? StyleExpression { get; }
         public HHeaderAttribute(string header, string tooltip="",string? style=null)
         {

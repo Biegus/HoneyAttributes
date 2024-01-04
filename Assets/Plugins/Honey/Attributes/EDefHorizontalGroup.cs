@@ -10,7 +10,8 @@ namespace Honey.Editor
 {
     public class EDefHorizontalGroupDrawer : IHoneyGroupDrawer
     {
-        public void DrawLayout(string groupPath, string name, HoneyEditorHandler editor, Attribute attribute, Group group)
+        public void DrawLayout(string groupPath, string name, HoneyEditorHandler editor, Attribute attribute,
+            Group @group, string innerPath)
         {
             var atr = attribute.As<EDefHorizontalGroupAttribute>();
 
@@ -28,7 +29,7 @@ namespace Honey.Editor
             HoneyHorizontalLayoutHelper.EndHorizontal();
         }
 
-        public void OnEditorDisable(HoneyEditorHandler editor)
+        public void DisposeEditor(HoneyEditorHandler editor)
         {
                
         }
@@ -40,6 +41,7 @@ namespace Honey
 {
     public enum HorizontalLabelMode
     {
+        //lack of usage is fine
         Hide,
         Above,
         AsElement

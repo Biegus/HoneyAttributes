@@ -12,15 +12,25 @@ using UnityEngine;
 
 namespace Honey.Editor
 {
-    public struct HoneyDrawerInput
+    public readonly struct HoneyDrawerInput
     {
-        public FieldInfo Field;
-        public object? Obj;
-        public object Container;
-        public SerializedProperty SerializedProperty;
-        public IHoneyTempMemory TempMemory;
-        public IHoneyErrorListener Listener;
-        public bool AllowLayout;
+        [Flags]
+        public enum Flags
+        {
+            None,
+            AllowLayout,
+            Changed,
+        }
+        public  FieldInfo Field { get; init; }
+        public  object? Obj { get; init; }
+        public  object Container { get; init; }
+        public  SerializedProperty SerializedProperty { get; init; }
+        public  Stack<object> TempMemory { get; init; }
+        public  IHoneyErrorListener Listener { get; init; }
+        public  Flags Flag { get; init; }
+        public int Key { get; init; }
+        public bool AllowLayout => Flag.HasFlag(Flags.AllowLayout);
+        public bool Changed => Flag.HasFlag(Flags.Changed);
     }
 
    
@@ -49,6 +59,10 @@ namespace Honey.Editor
     
     public interface IHoneyAdditionalDrawer
     {
+        /// <summary>
+        /// If false on all attributes, "Obj" and "Container" in HoneyDrawerInput will be null.
+        /// Retrieving them causes small performance overhead
+        /// </summary>
         bool RequestHierarchyQuery { get; }
         HoneyPropertyState GetDesiredState(in HoneyDrawerInput inp, HoneyAttribute attribute)
         {

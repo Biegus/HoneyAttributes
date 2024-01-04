@@ -11,8 +11,6 @@ namespace Honey.Editor
     public class FolderPath : IComparable<FolderPath>
     {
      
-      
-
         private readonly string path;
         private readonly string[] elements;
         public FolderPath(string path)

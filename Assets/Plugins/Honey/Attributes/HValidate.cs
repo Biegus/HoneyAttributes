@@ -6,7 +6,6 @@ using System;
 
 #if UNITY_EDITOR
 using Honey.Editor;
-using Honey.Validation;
 using UnityEditor;
 
 namespace Honey.Editor

@@ -8,8 +8,6 @@ using System.Reflection;
 using System.Text;
 using Honey;
 using Honey.Helper;
-using Honey.Validation;
-using PlasticGui.Configuration.CloudEdition.Welcome;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.WSA;

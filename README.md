@@ -31,7 +31,7 @@ To enable context in which attributes with "E" prefix work add:
 public class $ClassName$Editor : Honey.Editor.HoneyEditor
 #endif
 ```
-If you just want the custom editor to work for every script, use ``[UnityEditor.CustomEditor(typeof(object),true]`` (not recommended)
+If you just want the custom editor to work for every mono behaviour script, use ``[UnityEditor.CustomEditor(typeof(MonoBehaviour),true]`` (not recommended)
 
 
 ## Meta and control attributes
@@ -83,6 +83,7 @@ public class HeaderDemo: MonoBehaviour
  [HHeader("small left italic text", style: "small_left_header")]  
  [HoneyRun]  
  public int someValue;
+}
 ```
 ![Unity_B9YNZFhcW5](https://user-images.githubusercontent.com/48364457/176658638-c1887e3e-a20b-4d65-946a-3497ff4eca2d.png)
 
@@ -103,9 +104,7 @@ public int a;
 [ColorSeparator("RGB(51,184,100)")]
 public int b;
 ```
-
 ![image](https://user-images.githubusercontent.com/48364457/176659124-1d12cb07-a616-44b8-ac33-bc62f78167ca.png)
-
 
 #### [HShortPrefix]
 Makes prefix as short as possible
@@ -163,7 +162,8 @@ instead of Element 0, Element 1 will display 0,1,2,..
 
 
 #### [HJustProgressBar]
-Draws progress bar.
+Draws progress bar. 
+It doesn't have to be added to variable that it uses. 
 ```csharp
 
 [HJustProgressBar("hp","0","maxHp" ,style: ProgressBarStyle.Red, Name = "HP",Size = 2)]  
@@ -220,6 +220,16 @@ public object unityNamespaceObject = null;
 ```
 
 ![Unity_UuGxiG4BSZ](https://user-images.githubusercontent.com/48364457/176678887-2eb4977c-c60e-4c15-962b-7725be949ab0.gif)
+
+
+#### [ESpritePreview] 
+Draws preview for a sprite  
+```csharp
+[ESpritePreview][EHoneyRun]
+public Sprite someSprite;
+```
+todo: add gif 
+
 
 
 #### [EHPreview]
@@ -326,7 +336,8 @@ Disallows scene references.
 
 #### [HValidate]
 Soft restrain that marks field in red if requirements are not met.
-Works with methods returning bool, bool fields and properties and simple **Bool expressions**
+Works with methods returning bool, bool fields and properties and simple **Bool expressions**  
+Doesn't support lists/arrays
 ```csharp
 [HoneyRun]
 [HValidate("itself!=3")] public int not3;  
@@ -378,8 +389,45 @@ public class GroupDemo : MonoBehaviour
  }
   
   ```
+
+![Unity_9UHrpnx0So](https://user-images.githubusercontent.com/48364457/176683699-df2530a2-aa93-455b-b133-f572aaffd997.gif)
+
+You can also use `[EBeginGroup]`  i `[EEndGroup]`  
+*note*: (added in v.1.2)  
+```csharp
+[EDefVerticalGroup("BasicFolders",BaseGroupAppearance.Empty,true)]  
+[EDefVerticalGroup("BasicFolders/a",BaseGroupAppearance.Empty,true)]  
+
+[EDefVerticalGroup("GroupBox",BaseGroupAppearance.BoxGroup,false)]  
+[EDefVerticalGroup("GroupBox/a",BaseGroupAppearance.BoxGroup,false)]  
   
-  ![Unity_9UHrpnx0So](https://user-images.githubusercontent.com/48364457/176683699-df2530a2-aa93-455b-b133-f572aaffd997.gif)
+public class GroupDemo : MonoBehaviour  
+{  
+  [EBeginGroup("BasicFolders")]
+  public string x;
+  public string o;
+  [EEndGroup]
+  [EBeginGroup("BasicFolders/a")]
+  public string y;
+  public string n;
+  public string s;
+  [EEndGroup()]
+
+  [EBeginGroup("GroupBox")]
+  public string d;
+  public string g;
+  [EEndGroup]
+  [EBeginGroup("GroupBox/a")]
+  public string k;
+  public string a;
+  [EEndGroup]
+ }
+  
+```
+
+
+
+
 
 #### [EDefTabGroup]
 
